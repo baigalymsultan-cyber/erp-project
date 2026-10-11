@@ -26,15 +26,32 @@ router = APIRouter()
 def post_reverse_operation(
     operation_id: int,
     principal: Annotated[dict[str, object], Depends(require_privilege("ACCOUNTANT"))],
-    comment: str | None = None,
+    reversal_reason: str,
+    amount: Decimal | None = None,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key", max_length=64)] = None,
     session: Session = Depends(get_db),
 ) -> dict[str, object]:
-    """§16 — reversal: the row stays, status becomes REVERSED."""
+    """ADR-016 — reversal: creates a compensating POSTED operation.
+
+    The original operation is never mutated (no status flip, no comment
+    overwrite). ``reversal_reason`` is mandatory (Q5). ``amount`` enables
+    partial reversal (Q4); omitted = full reversal. ``Idempotency-Key``
+    header makes retries safe.
+    """
     target = session.get(Operation, operation_id)
     if target is None:
         raise HTTPException(status_code=404, detail="operation not found")
     ensure_ip_access(session, principal, target.ip_id)
-    result = reverse_operation(session, operation_id, comment)
+    try:
+        result = reverse_operation(
+            session,
+            operation_id,
+            reversal_reason,
+            amount=amount,
+            idempotency_key=idempotency_key,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
     session.flush()  # §9: request transaction commits in get_db; flush for IDs only
     return result
 

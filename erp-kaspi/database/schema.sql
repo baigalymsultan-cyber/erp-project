@@ -565,6 +565,8 @@ BEGIN
        NEW.external_id IS DISTINCT FROM OLD.external_id OR
        NEW.related_order_id IS DISTINCT FROM OLD.related_order_id OR
        NEW.related_operation_id IS DISTINCT FROM OLD.related_operation_id OR
+       NEW.reverses_operation_id IS DISTINCT FROM OLD.reverses_operation_id OR
+       NEW.reversal_reason IS DISTINCT FROM OLD.reversal_reason OR
        NEW.account_id IS DISTINCT FROM OLD.account_id OR
        NEW.import_fingerprint IS DISTINCT FROM OLD.import_fingerprint OR
        NEW.created_by IS DISTINCT FROM OLD.created_by OR
@@ -576,10 +578,12 @@ BEGIN
             OLD.id, OLD.status USING ERRCODE = 'check_violation';
     END IF;
 
-    IF NEW.status IS DISTINCT FROM OLD.status
-       AND NOT (OLD.status = 'POSTED' AND NEW.status = 'REVERSED') THEN
+    -- ADR-016: the POSTED -> REVERSED edge is closed. Reversal is a
+    -- compensating POSTED operation, never a status flip (R1/R4).
+    -- Legacy REVERSED rows are grandfathered; the status value stays valid.
+    IF NEW.status IS DISTINCT FROM OLD.status THEN
         RAISE EXCEPTION
-            'invalid operation status transition from % to % (FIN-OPS-0001).',
+            'invalid operation status transition from % to % (FIN-OPS-001, ADR-016).',
             OLD.status, NEW.status USING ERRCODE = 'check_violation';
     END IF;
 
@@ -588,7 +592,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION fn_protect_posted_ledger_operation() IS
-'FIN-OPS-0001: non-transfer operations are immutable after DRAFT; only DRAFT->POSTED and POSTED->REVERSED status edges are allowed. Transfer legs are guarded by fn_protect_posted_operation().';
+'FIN-OPS-0001: non-transfer operations are immutable after DRAFT; only DRAFT->POSTED is allowed. The POSTED->REVERSED edge was closed by ADR-016 (compensating-operation model). Transfer legs are guarded by fn_protect_posted_operation().';
 
 -- ---------------------------------------------------------------------
 -- 2.13 fn_protect_posted_transfer()
@@ -796,14 +800,16 @@ CREATE TABLE IF NOT EXISTS operation_types (
     updated_at  TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT chk_operation_types_direction CHECK (direction IN ('IN', 'OUT')),
-    CONSTRAINT chk_operation_types_kind      CHECK (kind IN ('INCOME', 'EXPENSE', 'TRANSFER')),
+    CONSTRAINT chk_operation_types_kind      CHECK (kind IN ('INCOME', 'EXPENSE', 'TRANSFER', 'REVERSAL_IN', 'REVERSAL_OUT')),
     CONSTRAINT chk_operation_types_pnl       CHECK (
         (kind = 'TRANSFER' AND affects_pnl = FALSE) OR
         (kind <> 'TRANSFER')
     ),
     CONSTRAINT chk_operation_types_dir_kind  CHECK (
-        (kind = 'INCOME'  AND direction = 'IN')  OR
-        (kind = 'EXPENSE' AND direction = 'OUT') OR
+        (kind = 'INCOME'      AND direction = 'IN')  OR
+        (kind = 'EXPENSE'     AND direction = 'OUT') OR
+        (kind = 'REVERSAL_IN' AND direction = 'IN')  OR
+        (kind = 'REVERSAL_OUT' AND direction = 'OUT') OR
         (kind = 'TRANSFER')
     )
 );
@@ -1502,6 +1508,9 @@ CREATE TABLE IF NOT EXISTS operations (
     external_id         VARCHAR(100)    NULL,
     related_order_id    BIGINT          NULL REFERENCES orders (id) ON DELETE RESTRICT,
     related_operation_id BIGINT         NULL REFERENCES operations (id) ON DELETE RESTRICT,
+    -- ADR-016 Q3/Q5: compensating-reversal link + mandatory reason
+    reverses_operation_id BIGINT        NULL REFERENCES operations (id) ON DELETE RESTRICT,
+    reversal_reason  TEXT               NULL,
     raw_payload_id      BIGINT          NULL REFERENCES raw_kaspi_payloads (id) ON DELETE SET NULL,
     comment             TEXT            NULL,
     created_at          TIMESTAMPTZ     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1519,6 +1528,13 @@ CREATE TABLE IF NOT EXISTS operations (
     CONSTRAINT chk_operations_no_self_reference CHECK (
         related_operation_id IS NULL OR related_operation_id <> id
     ),
+    -- ADR-016 Q3/Q5: reversal link integrity
+    CONSTRAINT chk_operations_reversal_link CHECK (
+        (reverses_operation_id IS NULL) = (reversal_reason IS NULL)
+    ),
+    CONSTRAINT chk_operations_reversal_no_self CHECK (
+        reverses_operation_id IS NULL OR reverses_operation_id <> id
+    ),
     CONSTRAINT fk_operations_account_ip FOREIGN KEY (account_id, ip_id)
         REFERENCES accounts (id, ip_id) ON DELETE RESTRICT
 );
@@ -1527,6 +1543,8 @@ COMMENT ON TABLE  operations                      IS 'Central financial ledger. 
 COMMENT ON COLUMN operations.amount               IS 'KZT, NUMERIC(15,2), never zero. Sign is validated against operation_types.direction (§27).';
 COMMENT ON COLUMN operations.external_id          IS 'Id in the source system. UNIQUE per (ip_id,type_id) when present — makes retries idempotent (§41, ADR-010).';
 COMMENT ON COLUMN operations.related_operation_id IS 'Link to the reversed/corrected operation, and pairs TRANSFER_OUT with TRANSFER_IN (§16, §28).';
+COMMENT ON COLUMN operations.reverses_operation_id IS 'ADR-016: the original operation this compensating reversal offsets. NULL for non-reversal operations.';
+COMMENT ON COLUMN operations.reversal_reason IS 'ADR-016 Q5: mandatory business reason for the reversal.';
 COMMENT ON COLUMN operations.import_fingerprint   IS 'SHA-256 of the normalised source row — prevents duplicate Excel import (§41).';
 
 -- ---------------------------------------------------------------------
@@ -2771,6 +2789,121 @@ CREATE TRIGGER trg_operations_protect_posted_ledger
     BEFORE UPDATE ON operations
     FOR EACH ROW EXECUTE FUNCTION fn_protect_posted_ledger_operation();
 
+-- ---------------------------------------------------------------------
+-- ADR-016: compensating-operation reversal model
+-- ---------------------------------------------------------------------
+
+-- Q4: partial-reversal cap trigger
+CREATE OR REPLACE FUNCTION fn_reversal_cap_check()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_isolation       TEXT;
+    v_original_amount NUMERIC(15,2);
+    v_total_reversed  NUMERIC(15,2);
+BEGIN
+    IF NEW.reverses_operation_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    SELECT current_setting('transaction_isolation') INTO v_isolation;
+    IF v_isolation IS DISTINCT FROM 'read committed' THEN
+        RAISE EXCEPTION
+            'reversal cap check requires transaction isolation read committed, got % (ADR-016 Q4)',
+            v_isolation
+            USING ERRCODE = 'check_violation';
+    END IF;
+
+    SELECT amount INTO v_original_amount
+    FROM operations
+    WHERE id = NEW.reverses_operation_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION
+            'reversal: original operation % does not exist (ADR-016)',
+            NEW.reverses_operation_id
+            USING ERRCODE = 'foreign_key_violation';
+    END IF;
+
+    SELECT COALESCE(SUM(ABS(amount)), 0) INTO v_total_reversed
+    FROM operations
+    WHERE reverses_operation_id = NEW.reverses_operation_id;
+
+    IF v_total_reversed + ABS(NEW.amount) > ABS(v_original_amount) THEN
+        RAISE EXCEPTION
+            'reversal cap exceeded for operation %: already reversed %, new %, original % (ADR-016 Q4)',
+            NEW.reverses_operation_id, v_total_reversed, ABS(NEW.amount), ABS(v_original_amount)
+            USING ERRCODE = 'check_violation';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION fn_reversal_cap_check() IS
+    'ADR-016 Q4: partial-reversal cap. SUM(ABS(compensations)) <= ABS(original.amount). '
+    'Asserts read committed isolation and takes FOR UPDATE on the original row.';
+
+DROP TRIGGER IF EXISTS trg_operations_reversal_cap ON operations;
+CREATE TRIGGER trg_operations_reversal_cap
+    BEFORE INSERT ON operations
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_reversal_cap_check();
+
+-- Posting locks (month granularity)
+CREATE TABLE IF NOT EXISTS posting_locks (
+    id           BIGSERIAL     PRIMARY KEY,
+    ip_id        BIGINT        NOT NULL REFERENCES ip_entities (id) ON DELETE RESTRICT,
+    period_start DATE          NOT NULL,
+    period_end   DATE          NOT NULL,
+    locked_at    TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    locked_by    BIGINT        NULL REFERENCES users (id) ON DELETE SET NULL,
+
+    CONSTRAINT chk_posting_locks_period CHECK (period_start <= period_end),
+    CONSTRAINT uq_posting_locks_ip_period UNIQUE (ip_id, period_start, period_end)
+);
+
+COMMENT ON TABLE posting_locks IS
+    'ADR-016: month-granularity posting locks. New operations (including '
+    'reversals) cannot be posted into a locked period.';
+
+CREATE OR REPLACE FUNCTION fn_posting_lock_check()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM posting_locks
+        WHERE ip_id = NEW.ip_id
+          AND NEW.operation_date >= period_start
+          AND NEW.operation_date <= period_end
+    ) THEN
+        RAISE EXCEPTION
+            'posting locked for ip % period containing % (ADR-016)',
+            NEW.ip_id, NEW.operation_date
+            USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION fn_posting_lock_check() IS
+    'ADR-016: rejects INSERTs into locked posting periods.';
+
+DROP TRIGGER IF EXISTS trg_operations_posting_lock ON operations;
+CREATE TRIGGER trg_operations_posting_lock
+    BEFORE INSERT ON operations
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_posting_lock_check();
+
+-- Index for reversal lookups (ADR-016 Q3)
+CREATE INDEX IF NOT EXISTS ix_operations_reverses_op
+    ON operations (reverses_operation_id)
+    WHERE reverses_operation_id IS NOT NULL;
+
+
 DROP TRIGGER IF EXISTS trg_transfers_protect_posted ON transfers;
 CREATE TRIGGER trg_transfers_protect_posted
     BEFORE UPDATE ON transfers
@@ -2801,7 +2934,8 @@ CREATE CONSTRAINT TRIGGER trg_operations_validate_transfer_pair
 -- Financial summary per ИП per month.
 -- §76 / §28 — transfers are excluded from income and expense
 -- (operation_types.affects_pnl = FALSE) and reported separately.
--- Reversed operations are excluded from the totals (§16).
+-- ADR-016 Q7: reversal pairs net (REVERSAL_OUT offsets INCOME,
+-- REVERSAL_IN offsets EXPENSE); full reversal -> 0.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_ip_financial_summary AS
 SELECT
@@ -2812,8 +2946,8 @@ SELECT
     -- P&L columns filter WHERE accrual_date IS NOT NULL (no double-count).
     date_trunc('month', COALESCE(o.accrual_date, o.operation_date))::DATE AS period_month,
     -- income / expense (P&L only, transfers excluded; accrual basis)
-    coalesce(sum(o.amount) FILTER (WHERE ot.kind = 'INCOME' AND o.accrual_date IS NOT NULL),  0)::NUMERIC(15,2)         AS total_income,
-    coalesce(sum(-o.amount) FILTER (WHERE ot.kind = 'EXPENSE' AND o.accrual_date IS NOT NULL), 0)::NUMERIC(15,2)        AS total_expense,
+    coalesce(sum(o.amount) FILTER (WHERE ot.kind IN ('INCOME', 'REVERSAL_OUT') AND o.accrual_date IS NOT NULL),  0)::NUMERIC(15,2)         AS total_income,
+    coalesce(sum(-o.amount) FILTER (WHERE ot.kind IN ('EXPENSE', 'REVERSAL_IN') AND o.accrual_date IS NOT NULL), 0)::NUMERIC(15,2)        AS total_expense,
     coalesce(sum(o.amount) FILTER (WHERE ot.affects_pnl AND o.accrual_date IS NOT NULL), 0)::NUMERIC(15,2)              AS net_profit,
     -- revenue breakdown by source
     coalesce(sum(o.amount) FILTER (WHERE ot.code = 'SALE_KASPI_SHOP' AND o.accrual_date IS NOT NULL), 0)::NUMERIC(15,2) AS revenue_kaspi_shop,
@@ -2832,7 +2966,7 @@ JOIN operation_types ot ON ot.id = o.type_id
 GROUP BY ip.id, ip.name, ip.bin, date_trunc('month', COALESCE(o.accrual_date, o.operation_date));
 
 COMMENT ON VIEW v_ip_financial_summary IS
-'MANDATORY VIEW (§63). Monthly financial summary per ИП. Transfers are excluded from P&L (§28, §76); reversed operations excluded (§16).';
+'MANDATORY VIEW (§63), ADR-016 Q7. Monthly financial summary per ИП. Transfers are excluded from P&L (§28, §76). Reversal pairs net: full reversal -> 0.';
 
 -- ---------------------------------------------------------------------
 -- 8.x v_cash_flow — §13 FINANCE-OPS-001 «КУДА ДЕЛИСЬ МОИ ДЕНЬГИ?»
@@ -3149,7 +3283,10 @@ INSERT INTO operation_types (code, name, direction, kind, affects_pnl, is_system
     ('EXPENSE_BANK_FEE',  'Комиссия банка',             'OUT', 'EXPENSE',  TRUE,  TRUE),
     ('SALARY_PAYMENT',    'Выплата заработной платы',   'OUT', 'EXPENSE',  TRUE,  TRUE),
     ('TRANSFER_IN',       'Перевод между ИП (приход)',  'IN',  'TRANSFER', FALSE, TRUE),
-    ('TRANSFER_OUT',      'Перевод между ИП (расход)',  'OUT', 'TRANSFER', FALSE, TRUE)
+    ('TRANSFER_OUT',      'Перевод между ИП (расход)',  'OUT', 'TRANSFER', FALSE, TRUE),
+    -- ADR-016 Q2: direction-locked reversal kinds (affects_pnl mirrors original)
+    ('REVERSAL_IN',       'Сторно (приход)',             'IN',  'REVERSAL_IN',  TRUE, TRUE),
+    ('REVERSAL_OUT',      'Сторно (расход)',            'OUT', 'REVERSAL_OUT', TRUE, TRUE)
 ON CONFLICT (code) DO NOTHING;
 
 -- ---------------------------------------------------------------------

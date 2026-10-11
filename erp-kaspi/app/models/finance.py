@@ -160,6 +160,15 @@ class Operation(Base):
             "related_operation_id IS NULL OR related_operation_id <> id",
             name="chk_operations_no_self_reference",
         ),
+        # ADR-016 Q3/Q5: compensating-reversal link + mandatory reason.
+        CheckConstraint(
+            "(reverses_operation_id IS NULL) = (reversal_reason IS NULL)",
+            name="chk_operations_reversal_link",
+        ),
+        CheckConstraint(
+            "reverses_operation_id IS NULL OR reverses_operation_id <> id",
+            name="chk_operations_reversal_no_self",
+        ),
         # §64 — mandatory index name.
         Index("idx_operations_analytics", "ip_id", "operation_date", "type_id"),
         Index("idx_operations_date", "operation_date"),
@@ -167,6 +176,12 @@ class Operation(Base):
         Index("idx_operations_counterparty", "counterparty_id"),
         Index("idx_operations_related_order", "related_order_id"),
         Index("idx_operations_related_op", "related_operation_id"),
+        # ADR-016 Q3: index for reversal lookups.
+        Index(
+            "ix_operations_reverses_op",
+            "reverses_operation_id",
+            postgresql_where=text("reverses_operation_id IS NOT NULL"),
+        ),
         Index("idx_operations_raw_payload", "raw_payload_id"),
         Index("idx_operations_account", "account_id"),
         Index("idx_operations_import_batch", "import_batch_id"),
@@ -254,6 +269,19 @@ class Operation(Base):
         nullable=True,
         comment="Link to the reversed/corrected operation, and pairs TRANSFER_OUT "
         "with TRANSFER_IN (§16, §28).",
+    )
+    # ADR-016 Q3/Q5: compensating-reversal link. The original operation is
+    # never mutated; a reversal is a new POSTED operation pointing back.
+    reverses_operation_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("operations.id", ondelete="RESTRICT"),
+        nullable=True,
+        comment="ADR-016: the original operation this compensating reversal offsets.",
+    )
+    reversal_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="ADR-016 Q5: mandatory business reason for the reversal.",
     )
     raw_payload_id: Mapped[int | None] = mapped_column(
         BigInteger,

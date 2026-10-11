@@ -99,7 +99,7 @@ class OperationType(Base):
     __table_args__ = (
         CheckConstraint("direction IN ('IN', 'OUT')", name="chk_operation_types_direction"),
         CheckConstraint(
-            "kind IN ('INCOME', 'EXPENSE', 'TRANSFER')",
+            "kind IN ('INCOME', 'EXPENSE', 'TRANSFER', 'REVERSAL_IN', 'REVERSAL_OUT')",
             name="chk_operation_types_kind",
         ),
         CheckConstraint(
@@ -107,8 +107,10 @@ class OperationType(Base):
             name="chk_operation_types_pnl",
         ),
         CheckConstraint(
-            "(kind = 'INCOME'  AND direction = 'IN')  OR "
-            "(kind = 'EXPENSE' AND direction = 'OUT') OR "
+            "(kind = 'INCOME'      AND direction = 'IN')  OR "
+            "(kind = 'EXPENSE'     AND direction = 'OUT') OR "
+            "(kind = 'REVERSAL_IN' AND direction = 'IN')  OR "
+            "(kind = 'REVERSAL_OUT' AND direction = 'OUT') OR "
             "(kind = 'TRANSFER')",
             name="chk_operation_types_dir_kind",
         ),

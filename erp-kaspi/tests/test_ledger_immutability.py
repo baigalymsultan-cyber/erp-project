@@ -231,18 +231,19 @@ def test_invalid_status_transition_is_rejected(
     assert _status(engine, operation_id) == start
 
 
-def test_posted_to_reversed_is_still_allowed(engine: Engine, ledger_ctx: dict[str, int]) -> None:
-    """The current reverse_operation() edge keeps working until ADR-016."""
+def test_posted_to_reversed_is_now_blocked(engine: Engine, ledger_ctx: dict[str, int]) -> None:
+    """ADR-016: the POSTED -> REVERSED status edge is closed.
+
+    Reversal is a compensating POSTED operation, never a status flip (R1/R4).
+    Legacy REVERSED rows are grandfathered; no new flips allowed.
+    """
     operation_id = _insert_operation(engine, ledger_ctx["ip"], "SALE_KASPI_PAY", Decimal("10.00"))
-    with engine.begin() as conn:
-        conn.execute(
-            text(
-                "UPDATE operations SET status = 'REVERSED', comment = 'reversal reason' "
-                "WHERE id = :id"
-            ),
-            {"id": operation_id},
-        )
-    assert _status(engine, operation_id) == "REVERSED"
+    _assert_rejected_by_ledger_guard(
+        engine,
+        "UPDATE operations SET status = 'REVERSED' WHERE id = :id",
+        {"id": operation_id},
+    )
+    assert _status(engine, operation_id) == "POSTED"
 
 
 def test_draft_is_editable_and_can_be_posted(engine: Engine, ledger_ctx: dict[str, int]) -> None:
@@ -275,7 +276,13 @@ def test_draft_is_editable_and_can_be_posted(engine: Engine, ledger_ctx: dict[st
 def test_posted_comment_stays_mutable_until_adr016(
     engine: Engine, ledger_ctx: dict[str, int]
 ) -> None:
-    """Documented gap (TD-019): reverse_operation() still overwrites comment."""
+    """ADR-016: reverse_operation() no longer overwrites comment.
+
+    The reversal reason lives on the compensating operation
+    (reversal_reason), never on the original. Direct comment UPDATE on a
+    POSTED row is still allowed by the ledger guard (only financial fields
+    and status are immutable); the reversal service simply doesn't do it.
+    """
     operation_id = _insert_operation(engine, ledger_ctx["ip"], "SALE_KASPI_SHOP", Decimal("1.00"))
     with engine.begin() as conn:
         conn.execute(
