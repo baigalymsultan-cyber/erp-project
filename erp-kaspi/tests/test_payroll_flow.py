@@ -189,7 +189,9 @@ def test_pay_flow_posts_salary_operation(session: Session, engine: Engine):
     period_status = session.scalar(
         text("SELECT status FROM payroll_periods WHERE id = :p"), {"p": ids["period_id"]}
     )
-    assert period_status == "PAID"
+    # TD-020 (Option A): period PAID is derived — one of two summaries paid,
+    # period must NOT be PAID yet.
+    assert period_status != "PAID"
     paid_entries = session.execute(
         text(
             "SELECT count(*) FROM work_entries WHERE employee_id = :e "
@@ -198,6 +200,41 @@ def test_pay_flow_posts_salary_operation(session: Session, engine: Engine):
         {"e": ids["piecework_emp"], "p": ids["period_id"]},
     ).scalar_one()
     assert paid_entries == 2, "both CONFIRMED entries freeze as PAID; DRAFT stays DRAFT"
+
+
+def test_period_paid_only_when_all_summaries_paid(session: Session, engine: Engine):
+    """TD-020 (Option A): period.status becomes PAID only after ALL summaries
+    in the period are paid. Derived status, not set by a single payment."""
+    ids = _seed_payroll(engine)
+    summaries = calculate_payroll(session, ids["period_id"])
+    session.commit()
+
+    for s in summaries:
+        approve_payroll_summary(session, int(s["id"]))
+    session.commit()
+
+    # Pay first summary — period must stay OPEN.
+    pay_payroll_summary(session, int(summaries[0]["id"]), date(2026, 4, 5), "CASH")
+    session.commit()
+    assert (
+        session.scalar(
+            text("SELECT status FROM payroll_periods WHERE id = :p"),
+            {"p": ids["period_id"]},
+        )
+        != "PAID"
+    )
+
+    # Pay remaining summaries — period becomes PAID (derived) only after ALL are paid.
+    for s in summaries[1:]:
+        pay_payroll_summary(session, int(s["id"]), date(2026, 4, 6), "CASH")
+    session.commit()
+    assert (
+        session.scalar(
+            text("SELECT status FROM payroll_periods WHERE id = :p"),
+            {"p": ids["period_id"]},
+        )
+        == "PAID"
+    )
 
 
 def test_double_payment_and_status_guards_blocked(session: Session, engine: Engine):

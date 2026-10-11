@@ -18,14 +18,13 @@ from frontend.app import I18N
 
 _FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 _TECHNICAL_KEY_CHARS = frozenset("abcdefghijklmnopqrstuvwxyz0123456789_")
-_LANGUAGE_KEYS = frozenset({"ru", "kk", "en"})
+_LANGUAGE_KEYS = frozenset({"ru", "kk"})
 
 
 def _frontend_trees() -> list[tuple[Path, ast.Module]]:
     return [
         (path, ast.parse(path.read_text(encoding="utf-8"), filename=str(path)))
-        # rglob: R1 split moved i18n into frontend/i18n/*.py
-        for path in sorted(_FRONTEND_DIR.rglob("*.py"))
+        for path in sorted(_FRONTEND_DIR.glob("*.py"))
     ]
 
 
@@ -105,41 +104,22 @@ def _referenced_catalog_keys() -> set[str]:
 
 def _catalog_dict_nodes() -> dict[str, ast.Dict]:
     result: dict[str, ast.Dict] = {}
-    # Map new R1 split-file names to language codes
-    _SPLIT_NAMES = {"I18N_RU": "ru", "I18N_KK": "kk", "I18N_EN": "en"}
     for path, tree in _frontend_trees():
         for node in ast.walk(tree):
-            # Handle both Assign (x = ...) and AnnAssign (x: type = ...)
-            if isinstance(node, ast.Assign):
-                target_ids = {
-                    target.id for target in node.targets
-                    if isinstance(target, ast.Name)
-                }
-                value = node.value
-            elif isinstance(node, ast.AnnAssign):
-                if not isinstance(node.target, ast.Name):
-                    continue
-                target_ids = {node.target.id}
-                value = node.value
-            else:
+            if not isinstance(node, ast.Assign):
                 continue
-            if value is None:
+            if not any(
+                isinstance(target, ast.Name) and target.id == "I18N" for target in node.targets
+            ):
                 continue
-            # Old style: I18N = {"ru": {...}, "kk": {...}}
-            if "I18N" in target_ids:
-                if not isinstance(value, ast.Dict):
-                    raise AssertionError(f"I18N must be a literal dict: {path}:{node.lineno}")
-                for key_node, value_node in zip(
-                    value.keys, value.values, strict=True
-                ):
-                    lang = _literal_string(key_node)
-                    if lang in _LANGUAGE_KEYS and isinstance(value_node, ast.Dict):
-                        result[lang] = value_node
-            # New R1 style: I18N_RU = {...}, I18N_KK = {...} in frontend/i18n/
-            for name, lang in _SPLIT_NAMES.items():
-                if name in target_ids and isinstance(value, ast.Dict):
-                    if lang in _LANGUAGE_KEYS or lang == "en":
-                        result[lang] = value
+            if not isinstance(node.value, ast.Dict):
+                raise AssertionError(f"I18N must be a literal dict: {path}:{node.lineno}")
+            for key_node, value_node in zip(
+                node.value.keys, node.value.values, strict=True
+            ):
+                lang = _literal_string(key_node)
+                if lang in _LANGUAGE_KEYS and isinstance(value_node, ast.Dict):
+                    result[lang] = value_node
     return result
 
 

@@ -381,7 +381,15 @@ def pay_payroll_summary(
     if amount <= 0:
         raise ValueError(f"§36: summary {summary_id} totals {amount}; nothing to pay")
 
-    period = session.get(PayrollPeriod, summary.payroll_period_id)
+    period = (
+        session.execute(
+            select(PayrollPeriod)
+            .where(PayrollPeriod.id == summary.payroll_period_id)
+            .with_for_update()  # F1: serialize concurrent payers of this period
+        )
+        .scalars()
+        .first()
+    )
     assert period is not None  # FK guarantees existence
 
     # 3. Ledger: SALARY_PAYMENT is OUT/EXPENSE — §27 stores OUT amounts negative
@@ -426,8 +434,20 @@ def pay_payroll_summary(
 
     # 5. Close the loop.
     summary.status = "PAID"
-    period.status = "PAID"
-    period.closed_at = datetime.now(UTC)
+    # TD-020 (Option A): period PAID is DERIVED — set only when ALL summaries
+    # in the period are PAID. The F1 row lock above serializes concurrent
+    # payers, so this check-and-set is atomic.
+    remaining = session.scalar(
+        select(func.count())
+        .select_from(PayrollSummary)
+        .where(
+            PayrollSummary.payroll_period_id == period.id,
+            PayrollSummary.status != "PAID",
+        )
+    )
+    if remaining == 0:
+        period.status = "PAID"
+        period.closed_at = datetime.now(UTC)
     session.execute(
         update(WorkEntry)
         .where(

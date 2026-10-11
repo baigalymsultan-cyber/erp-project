@@ -251,13 +251,10 @@ def test_employees_status_filter_alias(engine, applied_schema, admin_headers):
     """M-1: /employees must accept ?status=ACTIVE (alias for status_filter),
     consistent with /orders. Without the alias, FastAPI silently drops the
     param and FIRED/ON_LEAVE employees leak into the foreman dropdown."""
-    # The alias must be registered on the route (no HTTP call needed).
-    # After R1 split, routes live in domain routers; check the payroll router directly.
-    from app.api.payroll import router as payroll_router
+    from app.api import app
 
-    route = next(
-        r for r in payroll_router.routes if getattr(r, "path", "") == "/employees"
-    )
+    # The alias must be registered on the route (no HTTP call needed)
+    route = next(r for r in app.routes if getattr(r, "path", "") == "/employees")
     param_names = set()
     for param in route.dependant.query_params:
         param_names.add(param.alias or param.name)
