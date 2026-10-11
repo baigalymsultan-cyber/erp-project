@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+backups/
+*.dump
+*.dump.sha256
+.venv/
+.env
+
+.mypy_cache/
+.ruff_cache/
+Articles/
+gate_logs/
+docs/research/book_excel_full.txt

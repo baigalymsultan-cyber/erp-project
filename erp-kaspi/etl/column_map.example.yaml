@@ -1,0 +1,37 @@
+# =============================================================================
+# ETL column mapping (MASTER PROMPT §28, OQ-002)
+#
+# OQ-002: the exact structure of the customer's Excel files is unknown until
+# they provide samples. Per OPEN_QUESTIONS the ETL therefore never hard-codes
+# column names — everything is mapped here. Copy this file, adjust the names
+# to match the real export, and pass it with --map.
+#
+# Amounts: KZT, either "12 500,00" or "12500.00" (§15: KZT only, OQ-014).
+# Dates:   either dd.mm.yyyy or yyyy-mm-dd.
+# =============================================================================
+
+sheet: 0                  # sheet index (0-based) or sheet name
+header_row: 0             # row with column headers (0-based, after sheet)
+
+columns:
+  date: "Дата операции"        # -> operations.operation_date
+  order_id: "Номер заказа"     # -> operations.external_id (§41 idempotency)
+  amount: "Сумма"              # -> operations.amount
+  type: "Тип"                  # -> mapped by `types` below
+
+# source value (exact match after strip) -> operation_types.code
+# codes below are the STEP 1 seeds; edit freely to match the customer's file
+types:
+  "Продажа": SALE_KASPI_PAY
+  "Комиссия": EXPENSE_KASPI_FEE
+  "Доставка": EXPENSE_DELIVERY
+
+# operation_types.code -> categories.code (NULL = no category)
+categories:
+  SALE_KASPI_PAY: INCOME_KASPI_PAY
+  EXPENSE_KASPI_FEE: EXPENSE_KASPI_FEE
+  EXPENSE_DELIVERY: EXPENSE_DELIVERY
+
+defaults:
+  # used when a row has no value in the mapped column
+  comment_prefix: "Excel import"

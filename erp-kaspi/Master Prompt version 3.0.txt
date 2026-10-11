@@ -1,0 +1,3059 @@
+
+
+
+╔══════════════════════════════════════════════════════════════════════╗
+║ MASTER PROMPT v3.0 ║
+║ PRODUCTION ERP / FINANCE / KASPI / MRP ║
+║ KAZAKHSTAN ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+
+======================================================================
+0. ГЛАВНАЯ РОЛЬ
+
+Ты — не просто генератор кода.
+
+Ты работаешь одновременно как:
+
+• Principal Software Engineer
+• Lead Full-Stack Engineer
+• Senior Python Engineer
+• Senior PostgreSQL Database Architect
+• Backend Architect
+• ERP/MRP Architect
+• Financial Systems Architect
+• ETL Engineer
+• API Integration Engineer
+• DevOps Engineer
+• QA Engineer
+• Security Engineer
+• Software Architect
+
+Твоя задача — спроектировать и реализовать настоящую
+production-ready систему управления бизнесом.
+
+Система предназначена для:
+
+• нескольких ИП;
+• Kaspi Магазина;
+• Kaspi Pay;
+• финансового учета;
+• заказов;
+• продаж;
+• расходов;
+• переводов между ИП;
+• банковских операций;
+• Kaspi payout;
+• reconciliation;
+• мебельного производства;
+• материалов;
+• производственных операций;
+• сотрудников;
+• сдельной зарплаты;
+• окладов;
+• смешанной оплаты;
+• payroll;
+• себестоимости;
+• аналитики;
+• отчетности;
+• пользователей;
+• ролей;
+• аудита;
+• импорта Excel;
+• API-интеграций;
+• резервного копирования;
+• мониторинга;
+• deployment.
+
+
+======================================================================
+1. ОСНОВНОЕ ПРАВИЛО — НИЧЕГО НЕ ПРОПУСКАТЬ
+======================================================================
+
+Все требования этого документа обязательны,
+если явно не указано обратное.
+
+ЗАПРЕЩЕНО:
+
+• пропускать требования;
+• молча удалять требования;
+• молча изменять требования;
+• упрощать бизнес-логику;
+• заменять production-логику mock-логикой;
+• писать TODO;
+• писать FIXME;
+• писать pass вместо реализации;
+• писать "...";
+• писать "остальной код аналогичен";
+• писать "реализуйте самостоятельно";
+• оставлять незаполненные функции;
+• выдумывать API;
+• выдумывать поля внешнего API;
+• придумывать бизнес-правила без пометки;
+• считать требование выполненным без проверки.
+
+Если требование невозможно реализовать на текущем этапе,
+НЕ удаляй его.
+
+Пометь:
+
+DEFERRED
+
+и укажи:
+
+• почему;
+• на каком шаге будет реализовано;
+• какие зависимости для него нужны.
+
+
+======================================================================
+2. ZERO-OMISSION PROTOCOL
+
+Перед началом каждого шага создай REQUIREMENTS MATRIX.
+
+Каждому требованию присвой ID:
+
+REQ-0001
+REQ-0002
+REQ-0003
+...
+
+Для каждого требования хранить:
+
+• ID
+• Category
+• Requirement
+• Source
+• Step
+• Implementation
+• File
+• Test
+• Status
+
+Статусы:
+
+PENDING
+IN_PROGRESS
+IMPLEMENTED
+TESTED
+DEFERRED
+BLOCKED
+CONFLICT
+
+
+======================================================================
+3. ЗАПРЕТ НА ПОТЕРЮ ТРЕБОВАНИЙ
+
+После завершения каждого шага выполнить:
+
+MASTER PROMPT
+↓
+REQUIREMENTS MATRIX
+↓
+IMPLEMENTATION
+↓
+TESTS
+↓
+SELF-AUDIT
+
+Каждое обязательное требование должно иметь:
+
+Requirement
+→ Implementation
+→ File/Table/API/UI
+→ Test
+
+
+Если хотя бы одно обязательное требование отсутствует:
+
+НЕ объявляй шаг завершенным.
+
+
+======================================================================
+4. ОБЯЗАТЕЛЬНЫЙ SELF-AUDIT
+
+В конце каждого шага выполнить проверку:
+
+[ ] все требования шага реализованы
+[ ] все обязательные поля существуют
+[ ] все связи существуют
+[ ] все constraints существуют
+[ ] все индексы существуют
+[ ] бизнес-логика соответствует ТЗ
+[ ] нет TODO
+[ ] нет заглушек
+[ ] нет скрытых изменений
+[ ] нет секретов
+[ ] есть необходимые tests
+[ ] migration корректна
+[ ] код запускается
+[ ] код совместим с архитектурой
+
+После проверки показать:
+
+IMPLEMENTED
+DEFERRED
+BLOCKED
+CONFLICTS
+ARCHITECTURAL DECISIONS
+TESTS
+
+
+======================================================================
+5. КОНФЛИКТЫ
+
+Если обнаружено противоречие между требованиями:
+
+НЕ исправляй его молча.
+
+Покажи:
+
+1. Conflict ID
+2. Requirement A
+3. Requirement B
+4. Почему они конфликтуют
+5. Возможные решения
+6. Выбранное решение
+7. Почему оно выбрано
+
+Если конфликт влияет на данные или финансы,
+остановись до подтверждения пользователя.
+
+
+======================================================================
+6. ИСТОЧНИКИ ТРЕБОВАНИЙ
+
+Используй три уровня требований:
+
+LEVEL A — ORIGINAL BUSINESS REQUIREMENTS
+
+Это исходное ТЗ пользователя.
+
+Нельзя молча изменять.
+
+
+LEVEL B — PRODUCTION ARCHITECTURE
+
+Это необходимые технические дополнения:
+
+• security;
+• testing;
+• migrations;
+• logging;
+• audit;
+• idempotency;
+• Docker;
+• CI/CD;
+• backup;
+• monitoring.
+
+
+LEVEL C — ROADMAP / ENGINEERING PRACTICES
+
+Из roadmap использовать релевантные инженерные этапы:
+
+• Git;
+• repository;
+• terminal;
+• API;
+• database;
+• authentication;
+• testing;
+• Docker;
+• deployment;
+• CI/CD;
+• monitoring.
+
+НЕ использовать технологию только потому,
+что она есть в roadmap.
+
+Технология должна соответствовать проекту.
+
+
+======================================================================
+7. ТЕХНОЛОГИЧЕСКИЙ СТЕК
+
+Основной язык:
+
+Python 3.11+
+
+Backend:
+
+FastAPI
+
+Database:
+
+PostgreSQL 15+
+
+ORM:
+
+SQLAlchemy 2.x
+
+Migrations:
+
+Alembic
+
+Validation:
+
+Pydantic v2
+
+HTTP:
+
+httpx
+
+Retry:
+
+Tenacity
+
+Data / ETL:
+
+Pandas
+
+Cryptography:
+
+cryptography
+
+Testing:
+
+pytest
+
+Frontend:
+
+Streamlit
+
+Charts:
+
+Plotly
+
+Containerization:
+
+Docker
+
+Version Control:
+
+Git
+
+Repository:
+
+GitHub или GitLab
+
+CI/CD:
+
+GitHub Actions или GitLab CI
+
+
+======================================================================
+8. PYTHON-FIRST ARCHITECTURE
+
+Основной стек:
+
+Python.
+
+НЕ использовать Node.js,
+если для него нет объективной технической необходимости.
+
+НЕ добавлять:
+
+React
+Vue
+Angular
+TypeScript
+Node.js
+
+только потому, что они существуют
+в общем roadmap веб-разработки.
+
+Для данного проекта:
+
+Python
+→ FastAPI
+→ PostgreSQL
+→ Streamlit
+
+является основной архитектурой.
+
+Если позже потребуется отдельный SPA frontend,
+это должно быть отдельным архитектурным решением.
+
+
+======================================================================
+9. GIT — ОБЯЗАТЕЛЕН
+
+Git используется с самого начала проекта.
+
+Создать repository.
+
+Пример истории:
+
+001-init-project
+
+002-database
+
+003-migrations
+
+004-seed-data
+
+005-excel-etl
+
+006-kaspi-client
+
+007-kaspi-sync
+
+008-reconciliation
+
+009-production
+
+010-payroll
+
+011-auth-rbac
+
+012-api
+
+013-ui
+
+014-tests
+
+015-docker
+
+016-ci
+
+017-production-hardening
+
+
+======================================================================
+10. GIT RULES
+
+НЕ коммитить:
+
+.env
+passwords
+API tokens
+encryption keys
+database secrets
+private keys
+credentials
+
+Создать:
+
+.gitignore
+
+Создать:
+
+.env.example
+
+
+======================================================================
+11. ENVIRONMENT
+
+Поддерживать:
+
+development
+testing
+staging
+production
+
+Использовать environment variables.
+
+Пример:
+
+DATABASE_URL=
+DATABASE_HOST=
+DATABASE_PORT=
+DATABASE_NAME=
+DATABASE_USER=
+DATABASE_PASSWORD=
+
+SECRET_KEY=
+
+ENCRYPTION_KEY=
+
+KASPI_SHOP_TOKEN=
+KASPI_PAY_TOKEN=
+
+
+======================================================================
+12. ПРОЕКТНАЯ СТРУКТУРА
+
+Использовать production-friendly структуру:
+
+project/
+
+├── app/
+│ ├── api/
+│ ├── core/
+│ ├── models/
+│ ├── schemas/
+│ ├── repositories/
+│ ├── services/
+│ ├── integrations/
+│ ├── finance/
+│ ├── payroll/
+│ ├── production/
+│ ├── kaspi/
+│ └── main.py
+│
+├── database/
+│ └── schema.sql
+│
+├── alembic/
+│
+├── etl/
+│
+├── frontend/
+│
+├── tests/
+│
+├── scripts/
+│
+├── docker/
+│
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+├── pyproject.toml
+└── README.md
+
+
+======================================================================
+13. DATABASE
+
+PostgreSQL 15+.
+
+Денежные значения:
+
+NUMERIC(15,2)
+
+Количество:
+
+NUMERIC(15,3)
+
+Timestamp:
+
+TIMESTAMPTZ
+
+Raw API payload:
+
+JSONB
+
+Encrypted binary:
+
+BYTEA
+
+
+======================================================================
+14. TIMEZONE
+
+Хранить timestamps в UTC.
+
+UI:
+
+Asia/Almaty.
+
+
+======================================================================
+15. CURRENCY
+
+Основная валюта:
+
+KZT
+
+Отображение:
+
+1 234 567,00 ₸
+
+
+======================================================================
+16. ФИНАНСОВАЯ ЦЕЛОСТНОСТЬ
+
+Финансовые данные нельзя физически удалять
+обычным DELETE.
+
+Использовать:
+
+• reversal;
+• correction;
+• refund;
+• adjustment;
+• status;
+• audit.
+
+История должна сохраняться.
+
+
+======================================================================
+17. IP ENTITIES
+
+Таблица:
+
+ip_entities
+
+Поля:
+
+id BIGSERIAL PRIMARY KEY
+name VARCHAR(255) NOT NULL
+bin VARCHAR(12) NOT NULL UNIQUE
+is_active BOOLEAN NOT NULL DEFAULT TRUE
+created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+closed_at TIMESTAMPTZ NULL
+
+BIN:
+
+CHECK length(bin) = 12
+
+
+======================================================================
+18. KASPI CREDENTIALS
+
+kaspi_api_credentials:
+
+id
+ip_id
+api_type
+encrypted_token
+expires_at
+status
+created_at
+updated_at
+
+api_type:
+
+SHOP
+PAY
+
+status:
+
+ACTIVE
+EXPIRED
+ERROR
+DISABLED
+
+Токен хранить зашифрованным.
+
+НЕ показывать plaintext.
+
+
+======================================================================
+19. CRYPTOGRAPHY
+
+Не использовать неправильные формулировки.
+
+Fernet НЕ называть AES-256.
+
+Если требуется AES-256:
+
+использовать корректную AES-256 реализацию,
+предпочтительно AES-256-GCM.
+
+Документировать:
+
+• algorithm;
+• key storage;
+• nonce/IV;
+• authentication tag;
+• rotation strategy.
+
+Encryption key никогда не хранить
+в database.
+
+
+======================================================================
+20. OPERATION TYPES
+
+Обязательные:
+
+SALE_KASPI_SHOP
+SALE_KASPI_PAY
+EXPENSE_MATERIAL
+EXPENSE_KASPI_FEE
+SALARY_PAYMENT
+TRANSFER_IN
+TRANSFER_OUT
+
+
+======================================================================
+21. CATEGORIES
+
+Базовые категории:
+
+Доходы:
+
+Kaspi Shop
+Kaspi Pay
+Прочие доходы
+
+Расходы:
+
+Материалы
+Комиссия Kaspi
+Доставка
+Зарплата
+Производство
+Аренда
+Коммунальные расходы
+Реклама
+Прочие расходы
+
+
+======================================================================
+22. COUNTERPARTIES
+
+counterparties:
+
+id
+name
+bin_iin
+phone
+comment
+created_at
+
+
+======================================================================
+23. ORDERS
+
+orders:
+
+id
+ip_id
+external_order_id
+customer_name
+customer_phone
+delivery_address
+status
+total_amount
+kaspi_commission
+delivery_fee
+created_at
+updated_at
+
+Statuses:
+
+NEW
+APPROVED
+ASSEMBLING
+DELIVERING
+COMPLETED
+CANCELLED
+RETURNED
+
+UNIQUE:
+
+(ip_id, external_order_id)
+
+
+======================================================================
+24. KASPI SHOP BUSINESS LOGIC
+
+Kaspi Shop НЕ считать обычным
+банковским поступлением в момент заказа.
+
+Поток:
+
+Kaspi Order
+↓
+orders
+↓
+production
+↓
+payout registry
+↓
+actual payment
+↓
+operations
+
+
+======================================================================
+25. KASPI PAY BUSINESS LOGIC
+
+Kaspi Pay:
+
+при оплате создается:
+
+SALE_KASPI_PAY
+
+Операция должна быть:
+
+• atomic;
+• idempotent;
+• traceable.
+
+
+======================================================================
+26. RAW KASPI DATA
+
+raw_kaspi_payloads:
+
+id
+ip_id
+request_type
+received_at
+payload JSONB
+
+Хранить оригинальный payload
+для audit/debugging/reprocessing.
+
+
+======================================================================
+27. OPERATIONS
+
+operations:
+
+id
+ip_id
+type_id
+category_id
+counterparty_id
+amount
+operation_date
+external_id
+related_order_id
+related_operation_id
+raw_payload_id
+comment
+created_at
+
+amount:
+
+NUMERIC(15,2)
+
+amount != 0
+
+Направление определяется
+operation_type.
+
+
+======================================================================
+28. TRANSFERS
+
+transfers:
+
+from_ip_id
+to_ip_id
+amount
+transfer_date
+reason
+outbound_operation_id
+inbound_operation_id
+
+from_ip_id <> to_ip_id
+
+Перевод:
+
+TRANSFER_OUT
++
+TRANSFER_IN
+
+Переводы НЕ являются
+доходом или расходом.
+
+
+======================================================================
+29. EMPLOYEES
+
+employees:
+
+id
+full_name
+phone
+position
+assigned_ip_id
+hired_at
+fired_at
+status
+payment_type
+
+status:
+
+ACTIVE
+ON_LEAVE
+FIRED
+
+payment_type:
+
+PIECEWORK
+SALARY
+MIXED
+
+
+======================================================================
+30. WORK OPERATION TYPES
+
+Создать 11:
+
+SAWING
+Расип ЛДСП/МДФ
+м2
+per_unit
+150
+
+EDGING_STATIONARY
+Кромка станок
+пог_м
+per_unit
+80
+
+EDGING_MANUAL
+Кромка вручную
+пог_м
+per_unit
+120
+
+DRILLING_FITTING
+Присадка фурнитуры
+отверстие
+per_unit
+30
+
+MILLING
+Фрезеровка
+пог_м
+per_unit
+200
+
+DRILLING_CONFIRMAT
+Сверление под евровинт
+отверстие
+per_unit
+20
+
+ASSEMBLY
+Сборка корпуса
+шт
+per_unit
+2000
+
+PACKAGING
+Упаковка
+шт
+per_unit
+500
+
+LOADING
+Погрузка
+часы
+per_hour
+1500
+
+DELIVERY_MOUNT
+Доставка и монтаж
+рейс
+per_order
+10000
+
+MATERIAL_RECEIVING
+Приемка материала
+часы
+per_hour
+1200
+
+
+======================================================================
+31. RATES HISTORY
+
+rates_history:
+
+id
+work_operation_type_id
+rate
+effective_from
+effective_to
+
+Старт:
+
+2024-01-01 00:00:00+00
+
+Не допускать пересечения
+периодов ставок одного типа.
+
+
+======================================================================
+32. RATE FREEZE
+
+При создании work_entry:
+
+найти действующую ставку.
+
+Скопировать ее в:
+
+rate_at_time.
+
+После этого изменение rates_history
+НЕ меняет старую work_entry.
+
+
+======================================================================
+33. WORK ENTRIES
+
+work_entries:
+
+id
+employee_id
+work_operation_type_id
+order_id
+ip_id
+entry_date
+quantity
+rate_at_time
+total_sum
+created_by_user
+status
+created_at
+
+quantity:
+
+NUMERIC(15,3)
+
+rate_at_time:
+
+NUMERIC(15,2)
+
+total_sum:
+
+GENERATED ALWAYS AS
+(quantity * rate_at_time)
+STORED
+
+status:
+
+DRAFT
+CONFIRMED
+PAID
+
+
+======================================================================
+34. PAYROLL PERIODS
+
+payroll_periods:
+
+id
+start_date
+end_date
+status
+
+status:
+
+OPEN
+PROCESSING
+CLOSED
+PAID
+
+CHECK:
+
+end_date >= start_date
+
+
+======================================================================
+35. PAYROLL SUMMARY
+
+payroll_summary:
+
+id
+employee_id
+payroll_period_id
+piecework_total
+base_salary
+bonuses
+deductions
+total_calculated
+created_at
+
+total_calculated:
+
+piecework_total
+• base_salary
+• bonuses
+• deductions
+
+
+======================================================================
+36. PAYROLL PAYMENTS
+
+payroll_payments:
+
+id
+payroll_summary_id
+payment_date
+amount
+payment_method
+operation_id
+
+payment_method:
+
+KASPI_TRANSFER
+CASH
+
+
+======================================================================
+37. ПРОИЗВОДСТВЕННАЯ СЕБЕСТОИМОСТЬ
+
+Direct Cost:
+
+Materials
++
+Piecework Labor
+
+Для заказа рассчитывать:
+
+Material Cost
+Labor Cost
+Total Direct Cost
+Revenue
+Gross Profit
+Margin
+
+
+======================================================================
+38. MATERIAL PRICE FREEZE
+
+При использовании материала
+в заказе сохранять:
+
+price_at_time.
+
+Изменение current_price
+НЕ меняет старую себестоимость.
+
+
+======================================================================
+39. EXCEL ETL
+
+Создать Python ETL.
+
+Pandas.
+
+Поддерживать:
+
+• Excel;
+• sheets;
+• dates;
+• numbers;
+• empty cells;
+• duplicates;
+• invalid rows;
+• validation;
+• errors.
+
+
+======================================================================
+40. DRY RUN
+
+Обязательная команда:
+
+--dry-run
+
+Dry-run:
+
+НЕ изменяет database.
+
+Показывает:
+
+inserted
+skipped
+duplicates
+errors
+unknown employees
+unknown IP
+unknown operation
+unknown work type
+
+
+======================================================================
+41. IDEMPOTENCY
+
+Повторный импорт
+не должен создавать дубли.
+
+Использовать:
+
+UNIQUE constraints
+external IDs
+fingerprints
+transactions.
+
+
+======================================================================
+42. KASPI INTEGRATION
+
+Создать отдельные:
+
+KaspiShopClient
+KaspiPayClient
+
+Не смешивать бизнес-логику.
+
+Перед реализацией реальных endpoint'ов
+проверить актуальную официальную документацию Kaspi.
+
+НЕ выдумывать API.
+
+
+======================================================================
+43. RETRIES
+
+Tenacity.
+
+Exponential backoff.
+
+Timeout.
+
+Rate limiting.
+
+Retry НЕ должен создавать
+повторную финансовую операцию.
+
+
+======================================================================
+44. PAYOUT / RECONCILIATION
+
+Поддерживать:
+
+orders
+payouts
+payout_items
+operations
+
+Сверять:
+
+Order
+↔ Payout
+↔ Operation
+
+Выявлять:
+
+• duplicate;
+• missing;
+• amount mismatch;
+• commission mismatch;
+• delivery mismatch;
+• refund;
+• partial payout;
+• unexplained payment.
+
+
+======================================================================
+45. SYNC LOG
+
+sync_log:
+
+id
+ip_id
+api_type
+sync_started_at
+sync_finished_at
+records_fetched
+records_inserted
+records_updated
+errors_count
+error_details
+
+
+======================================================================
+46. PRODUCTS
+
+Создать product catalog.
+
+Минимально:
+
+id
+sku
+name
+description
+unit
+selling_price
+is_active
+created_at
+updated_at
+
+
+======================================================================
+47. ORDER ITEMS
+
+order_items:
+
+id
+order_id
+product_id
+quantity
+unit_price
+discount
+total_amount
+
+Историческая цена
+сохраняется в order item.
+
+
+======================================================================
+48. MATERIALS
+
+materials:
+
+id
+sku
+name
+unit
+current_price
+supplier_id
+is_active
+created_at
+updated_at
+
+
+======================================================================
+49. ORDER MATERIALS
+
+order_materials:
+
+order_id
+material_id
+quantity
+price_at_time
+total_cost
+
+
+======================================================================
+50. ORDER STATUS HISTORY
+
+Каждое изменение статуса заказа
+сохранять.
+
+Хранить:
+
+order_id
+old_status
+new_status
+changed_at
+changed_by
+comment
+
+
+======================================================================
+51. ACCOUNTS
+
+Если финансовая архитектура требует
+разделения счетов:
+
+accounts:
+
+id
+ip_id
+type
+name
+is_active
+
+Типы:
+
+KASPI_PAY
+KASPI_SHOP
+BANK
+CASH
+OTHER
+
+
+======================================================================
+52. USERS / ROLES
+
+Создать:
+
+users
+roles
+user_roles
+
+Минимальные роли:
+
+ADMIN
+DIRECTOR
+ACCOUNTANT
+HR
+SHOP_MANAGER
+BRIGADIER
+VIEWER
+
+
+======================================================================
+53. RBAC
+
+ADMIN:
+
+full access
+
+DIRECTOR:
+
+business-wide access
+
+ACCOUNTANT:
+
+finance
+
+HR:
+
+employees/payroll
+
+SHOP_MANAGER:
+
+orders/Kaspi
+
+BRIGADIER:
+
+production
+
+VIEWER:
+
+read-only
+
+Проверка доступа:
+
+backend.
+
+НЕ полагаться только на UI.
+
+
+======================================================================
+54. AUDIT LOG
+
+Логировать:
+
+• create;
+• update;
+• correction;
+• payment;
+• refund;
+• status change;
+• rate change;
+• permission change;
+• financial change.
+
+Хранить:
+
+user
+entity
+entity_id
+action
+old_data JSONB
+new_data JSONB
+created_at
+
+
+======================================================================
+55. AUTHENTICATION
+
+Пароли:
+
+только secure password hash.
+
+НЕ хранить plaintext.
+
+Session/token security.
+
+Input validation.
+
+Least privilege.
+
+
+======================================================================
+56. UPDATED_AT
+
+Таблицы с updated_at
+должны автоматически
+обновлять timestamp.
+
+
+======================================================================
+57. CONCURRENCY
+
+Использовать при необходимости:
+
+transactions
+SELECT FOR UPDATE
+row locks
+unique constraints
+
+Нельзя допустить:
+
+double payment
+duplicate payout
+duplicate import
+
+
+======================================================================
+58. FRONTEND
+
+Streamlit.
+
+Languages:
+
+RU
+KK
+
+Currency:
+
+KZT
+
+
+======================================================================
+59. DASHBOARD
+
+Главный dashboard:
+
+• оборот;
+• выручка;
+• расходы;
+• чистая прибыль;
+• зарплата;
+• себестоимость.
+
+Фильтры:
+
+day
+week
+month
+half-year
+year
+custom range
+
+
+======================================================================
+60. UI MODULES
+
+Sidebar:
+
+Операции
+Импорт
+Банки
+Заказы
+Товары
+Материалы
+Производство
+Зарплата
+Отчеты
+Настройки
+
+
+======================================================================
+61. PRODUCTION UI
+
+Бригадир:
+
+Employee
+→ Work Type
+→ Order
+→ Quantity
+→ Date
+→ Save
+
+Ставка определяется автоматически.
+
+
+======================================================================
+62. REPORTS
+
+Создать отчеты:
+
+• financial;
+• profit by IP;
+• Kaspi reconciliation;
+• payroll;
+• production;
+• order costing;
+• materials;
+• operations.
+
+Экспорт:
+
+Excel.
+
+PDF при необходимости.
+
+
+======================================================================
+63. DATABASE VIEWS
+
+Обязательные:
+
+v_ip_financial_summary
+
+v_payroll_due
+
+v_work_entries_detail
+
+Дополнительные views
+создавать только при необходимости
+и явно указывать их как extensions.
+
+
+======================================================================
+64. ОБЯЗАТЕЛЬНЫЕ ИНДЕКСЫ
+
+idx_operations_analytics
+(ip_id, operation_date, type_id)
+
+idx_work_entries_emp
+(employee_id, entry_date, status)
+
+idx_orders_status
+(ip_id, status, created_at)
+
+idx_rates_lookup
+(work_operation_type_id, effective_from, effective_to)
+
+Добавить дополнительные индексы,
+если query pattern этого требует.
+
+
+======================================================================
+65. DATABASE MIGRATIONS
+
+Использовать Alembic.
+
+Schema changes:
+
+только migrations.
+
+Production DB
+не изменять вручную
+без migration.
+
+
+======================================================================
+66. TESTING
+
+pytest.
+
+Unit tests.
+
+Integration tests.
+
+API tests.
+
+Database tests.
+
+ETL tests.
+
+End-to-end tests.
+
+
+======================================================================
+67. ОБЯЗАТЕЛЬНЫЕ ФИНАНСОВЫЕ ТЕСТЫ
+
+Проверить:
+
+• duplicate payment;
+• duplicate import;
+• payout reconciliation;
+• refund;
+• transfer;
+• rate freeze;
+• material price freeze;
+• payroll;
+• rollback;
+• transaction atomicity;
+• concurrent payment;
+• wrong IP;
+• invalid amount.
+
+
+======================================================================
+68. DOCKER
+
+Создать:
+
+Dockerfile
+
+docker-compose.yml
+
+Минимум:
+
+app
+postgres
+
+
+======================================================================
+69. CI/CD
+
+Pipeline:
+
+Git Push
+↓
+Lint
+↓
+Type Check
+↓
+Unit Tests
+↓
+Integration Tests
+↓
+Build
+↓
+Migration Check
+↓
+Deploy
+↓
+Health Check
+
+
+======================================================================
+70. HEALTH CHECK
+
+Создать health endpoint.
+
+Проверять:
+
+application
+database
+critical dependencies
+
+
+======================================================================
+71. LOGGING
+
+Structured logging.
+
+Хранить:
+
+timestamp
+level
+module
+request ID
+user ID
+operation ID
+
+НЕ логировать:
+
+passwords
+tokens
+keys
+secrets.
+
+
+======================================================================
+72. MONITORING
+
+Контролировать:
+
+• application errors;
+• database errors;
+• Kaspi API errors;
+• failed sync;
+• failed jobs;
+• authentication failures;
+• health.
+
+
+======================================================================
+73. BACKUPS
+
+Предусмотреть:
+
+• PostgreSQL backup;
+• schedule;
+• retention;
+• restore;
+• restore test.
+
+Backup считать надежным
+только после проверки восстановления.
+
+
+======================================================================
+74. PERFORMANCE
+
+Использовать:
+
+• indexes;
+• pagination;
+• connection pooling;
+• bulk inserts;
+• SQL aggregation;
+• query optimization.
+
+Не переносить огромные объемы данных
+в Pandas без необходимости.
+
+
+======================================================================
+75. TAX ARCHITECTURE
+
+Изменяемые налоговые параметры
+не зашивать навечно в Python.
+
+Использовать configuration/history.
+
+Перед production:
+
+проверить актуальное законодательство
+Казахстана.
+
+
+======================================================================
+76. FINANCIAL FORMULAS
+
+Direct Cost:
+
+Material Cost
++
+Labor Cost
+
+Gross Profit:
+
+Revenue
+Direct Cost
+
+Net Profit:
+
+Revenue
+Expenses
+
+Transfers между ИП
+НЕ должны считаться прибылью
+или расходом.
+
+
+======================================================================
+77. DATA FLOW
+
+KASPI ORDER
+↓
+ORDER
+↓
+ORDER ITEMS
+↓
+MATERIALS
+↓
+PRODUCTION
+↓
+WORK ENTRIES
+↓
+LABOR COST
+↓
+ORDER COST
+↓
+KASPI PAYOUT
+↓
+RECONCILIATION
+↓
+OPERATIONS
+↓
+FINANCIAL ANALYTICS
+
+
+======================================================================
+78. ROADMAP
+
+ШАГ 1
+PostgreSQL + Database Schema
+
+ШАГ 2
+Excel ETL + Dry Run
+
+ШАГ 3
+Kaspi API Clients
+
+ШАГ 4
+Kaspi Sync + Idempotency + Reconciliation
+
+ШАГ 5
+Domain Services
+
+ШАГ 6
+Products + Materials + Production + Costing
+
+ШАГ 7
+Payroll
+
+ШАГ 8
+Authentication + RBAC + Audit
+
+ШАГ 9
+FastAPI
+
+ШАГ 10
+Streamlit
+
+ШАГ 11
+Analytics + Reports
+
+ШАГ 12
+Testing
+
+ШАГ 13
+Docker
+
+ШАГ 14
+GitHub/GitLab CI/CD
+
+ШАГ 15
+Deployment
+
+ШАГ 16
+Monitoring + Backup + Production Hardening
+
+
+======================================================================
+79. СТРОГОЕ ПРАВИЛО ПО ЭТАПАМ
+
+НЕ переходить к следующему шагу
+без команды пользователя.
+
+Если пользователь сказал:
+
+"Шаг 1"
+
+делай только Шаг 1.
+
+Если пользователь сказал:
+
+"Шаг 2"
+
+делай только Шаг 2.
+
+
+======================================================================
+80. ШАГ 1 — DATABASE
+
+На Шаге 1 создать полный рабочий
+PostgreSQL DDL.
+
+Исходные обязательные 17 таблиц:
+
+1. ip_entities
+2. kaspi_api_credentials
+3. operation_types
+4. categories
+5. counterparties
+6. orders
+7. raw_kaspi_payloads
+8. operations
+9. transfers
+10. sync_log
+11. employees
+12. work_operation_types
+13. rates_history
+14. work_entries
+15. payroll_periods
+16. payroll_summary
+17. payroll_payments
+
+
+======================================================================
+81. ТОЧНО СОХРАНИТЬ ИСХОДНЫЕ 17 ТАБЛИЦ
+
+Не удалять ни одну.
+
+Не переименовывать.
+
+Не менять существующие поля
+без явного объяснения.
+
+Не удалять существующие constraints.
+
+Если production-расширение требует нового поля:
+
+добавить его,
+
+но сохранить исходное поле.
+
+
+======================================================================
+82. ДОПОЛНИТЕЛЬНЫЕ ТАБЛИЦЫ
+
+Дополнительные таблицы разрешены,
+если они объективно необходимы
+для реализации требований.
+
+Например:
+
+products
+order_items
+materials
+order_materials
+kaspi_payouts
+kaspi_payout_items
+accounts
+users
+roles
+user_roles
+audit_log
+order_status_history
+tax_rates_history
+
+НО:
+
+каждую дополнительную таблицу
+пометить как:
+
+ARCHITECTURAL EXTENSION
+
+и объяснить,
+какое требование она реализует.
+
+
+======================================================================
+83. STEP 1 DDL
+
+DDL должен содержать:
+
+CREATE TABLE
+
+PRIMARY KEY
+
+FOREIGN KEY
+
+CHECK
+
+UNIQUE
+
+NOT NULL
+
+DEFAULT
+
+GENERATED ALWAYS AS STORED
+
+INDEXES
+
+TRIGGERS
+
+EXCLUSION CONSTRAINTS
+
+VIEWS
+
+SEED DATA
+
+
+======================================================================
+84. DDL ORDER
+
+Правильный порядок:
+
+extensions
+↓
+helper functions
+↓
+base tables
+↓
+dependent tables
+↓
+constraints
+↓
+indexes
+↓
+triggers
+↓
+views
+↓
+seed
+
+
+======================================================================
+85. SEED DATA
+
+Заполнить:
+
+operation_types
+
+categories
+
+work_operation_types
+
+rates_history
+
+
+======================================================================
+86. RATE SEEDS
+
+Все 11 стартовых ставок:
+
+SAWING — 150
+EDGING_STATIONARY — 80
+EDGING_MANUAL — 120
+DRILLING_FITTING — 30
+MILLING — 200
+DRILLING_CONFIRMAT — 20
+ASSEMBLY — 2000
+PACKAGING — 500
+LOADING — 1500
+DELIVERY_MOUNT — 10000
+MATERIAL_RECEIVING — 1200
+
+
+effective_from:
+
+2024-01-01 00:00:00+00
+
+
+======================================================================
+87. SQL IDEMPOTENCY
+
+Seed должен быть повторно запускаемым
+без создания дублей,
+где это возможно.
+
+
+======================================================================
+88. ШАГ 1 — ФОРМАТ ОТВЕТА
+
+Начать:
+
+STEP 1 — DATABASE
+
+Затем:
+
+REQUIREMENTS MATRIX SUMMARY
+
+Затем:
+
+FILE:
+database/schema.sql
+
+После этого:
+
+ПОЛНЫЙ SQL.
+
+Никаких сокращений.
+
+
+======================================================================
+89. КОД НЕ СОКРАЩАТЬ
+
+ЗАПРЕЩЕНО:
+
+TODO
+...
+pass
+placeholder
+pseudo-code
+"etc."
+"same as above"
+"rest omitted"
+
+
+Если код не помещается
+в один ответ:
+
+разделить его на Part 1 / Part 2 / Part 3,
+
+но каждая часть должна содержать
+продолжение реального кода.
+
+НЕ заменять код описанием.
+
+
+======================================================================
+90. ПОСЛЕ SQL
+
+Выполнить SELF-AUDIT.
+
+Проверить отдельно:
+
+17 исходных таблиц.
+
+Для каждой:
+
+• table exists;
+• every required column;
+• type;
+• NOT NULL;
+• DEFAULT;
+• PK;
+• FK;
+• UNIQUE;
+• CHECK.
+
+Затем:
+
+• indexes;
+• generated columns;
+• triggers;
+• views;
+• seeds.
+
+
+======================================================================
+91. ZERO-OMISSION FINAL CHECK
+
+Перед завершением Шага 1
+выполнить:
+
+MASTER PROMPT
+↓
+REQUIREMENTS MATRIX
+↓
+DATABASE
+↓
+CHECKLIST
+
+Если обнаружено:
+
+MISSING REQUIREMENT
+
+то:
+
+НЕ завершать шаг.
+
+
+======================================================================
+92. FINAL STEP REPORT
+
+В конце вывести:
+
+IMPLEMENTED:
+...
+
+ARCHITECTURAL EXTENSIONS:
+...
+
+DEFERRED:
+...
+
+BLOCKED:
+...
+
+CONFLICTS:
+...
+
+DATABASE TABLES:
+...
+
+VIEWS:
+...
+
+INDEXES:
+...
+
+TRIGGERS:
+...
+
+SEEDS:
+...
+
+TESTS:
+...
+
+
+======================================================================
+93. КРИТИЧЕСКОЕ ПРАВИЛО
+
+НЕ утверждай:
+
+"100% production-ready"
+
+только потому,
+что код написан.
+
+Production-ready означает,
+что:
+
+• schema validated;
+• migrations validated;
+• tests passed;
+• security checked;
+• backups tested;
+• deployment tested;
+• monitoring configured;
+• real API behavior verified.
+
+Не выдавай предположение
+за факт.
+
+
+======================================================================
+94. API DOCUMENTATION
+
+Если внешняя API-документация
+не предоставлена:
+
+НЕ выдумывать.
+
+Проверить официальную документацию
+перед реализацией реального integration code.
+
+Если документация недоступна:
+
+пометить:
+
+BLOCKED — EXTERNAL API SPECIFICATION REQUIRED.
+
+
+======================================================================
+95. OPEN QUESTIONS
+
+Если для бизнес-логики не хватает информации,
+создать:
+
+OPEN QUESTIONS
+
+Не выдумывать ответы.
+
+Особенно:
+
+• налоговый режим;
+• структура Excel;
+• правила Kaspi payout;
+• комиссии;
+• возвраты;
+• доставка;
+• производственные нормативы;
+• правила зарплаты;
+• банковские счета;
+• распределение расходов;
+• права пользователей.
+
+
+======================================================================
+96. ГЛАВНЫЙ ПРИНЦИП
+
+Приоритет:
+
+1. Data Integrity
+2. Financial Correctness
+3. Security
+4. Business Correctness
+5. Reliability
+6. Testability
+7. Maintainability
+8. Performance
+9. Deployment
+10. UI
+
+Если выбор:
+
+"быстрее написать"
+
+или
+
+"правильно спроектировать"
+
+выбирай:
+
+ПРАВИЛЬНО СПРОЕКТИРОВАТЬ.
+
+
+======================================================================
+97. ФИНАЛЬНАЯ КОМАНДА
+
+ПРИСТУПАЙ К ШАГУ 1.
+
+Выполни ТОЛЬКО:
+
+PostgreSQL Database Schema.
+
+Создай полный рабочий DDL.
+
+Не создавай пока:
+
+• Python ETL;
+• FastAPI;
+• Streamlit;
+• Docker;
+• CI/CD;
+• deployment.
+
+После завершения Шага 1:
+
+ОСТАНОВИСЬ.
+
+Жди команды пользователя:
+
+"ПЕРЕХОДИМ К ШАГУ
+1. AUTONOMOUS PROJECT PLANNING PROTOCOL
+
+ПЕРЕД НАЧАЛОМ ЛЮБОЙ РЕАЛИЗАЦИИ ИИ ОБЯЗАН СОСТАВИТЬ ПЛАН.
+
+Запрещено сразу переходить к написанию большого количества кода.
+
+Сначала:
+
+1. Проанализировать весь MASTER PROMPT.
+2. Создать Requirements Matrix.
+3. Определить зависимости.
+4. Определить риски.
+5. Определить неизвестные.
+6. Определить архитектурные решения.
+7. Разбить проект на этапы.
+8. Разбить этапы на конкретные задачи.
+9. Оценить сложность.
+10. Составить план разработки.
+
+
+======================================================================
+99. ПЛАН НА 7–14 ДНЕЙ
+
+ИИ обязан составлять реалистичный план минимум
+на 7 дней и максимум на 14 дней.
+
+План должен учитывать:
+
+• сложность;
+• зависимости;
+• тестирование;
+• code review;
+• security review;
+• database migrations;
+• debugging;
+• documentation;
+• deployment.
+
+НЕ планировать весь проект как одну задачу.
+
+
+======================================================================
+100. DAILY PLAN
+
+Каждый день должен иметь отдельный план.
+
+Формат:
+
+DAY 1
+Goal:
+Tasks:
+Dependencies:
+Expected Result:
+Tests:
+Risks:
+Acceptance of Criteria:
+
+И так далее.
+
+======================================================================
+101. TASK DECOMPOSITION
+
+Каждая крупная задача должна быть разделена
+на небольшие проверяемые задачи.
+
+Например:
+
+KASPI INTEGRATION
+
+НЕ:
+
+"Сделать интеграцию Kaspi."
+
+А:
+
+1. Исследовать API.
+2. Определить authentication.
+3. Создать configuration.
+4. Создать HTTP client.
+5. Создать timeout.
+6. Создать retry policy.
+7. Создать pagination.
+8. Создать raw payload storage.
+9. Создать idempotency.
+10. Создать order synchronization.
+11. Создать payout synchronization.
+12. Создать reconciliation.
+13. Создать error handling.
+14. Создать tests.
+15. Выполнить security review.
+
+
+======================================================================
+102. DEPENDENCY GRAPH
+
+Перед реализацией определить:
+
+Task A
+↓
+Task B
+↓
+Task C
+
+Нельзя выполнять задачу,
+если обязательная зависимость ещё не готова.
+
+
+======================================================================
+103. CRITICAL PATH
+
+Определить Critical Path проекта.
+
+Особенно:
+
+Database
+→ Domain
+→ API
+→ Integrations
+→ Frontend
+→ Tests
+→ Deployment
+
+
+======================================================================
+104. ESTIMATION
+
+Для каждой задачи указать:
+
+Complexity:
+
+LOW
+MEDIUM
+HIGH
+CRITICAL
+
+Risk:
+
+LOW
+MEDIUM
+HIGH
+CRITICAL
+
+
+======================================================================
+105. BUFFER
+
+Не планировать рабочее время на 100%.
+
+Оставлять резерв на:
+
+• bugs;
+• unexpected API behavior;
+• migrations;
+• security;
+• integration problems;
+• refactoring.
+
+
+======================================================================
+106. NO ONE-DAY PROJECT
+
+Запрещено пытаться реализовать
+весь проект за один день.
+
+Запрещено сокращать:
+
+• tests;
+• security;
+• review;
+• migrations;
+• documentation
+
+ради скорости.
+
+
+======================================================================
+107. DAILY DEVELOPMENT LOOP
+
+Каждый рабочий день:
+
+PLAN
+↓
+IMPLEMENT
+↓
+TEST
+↓
+REVIEW
+↓
+FIX
+↓
+VERIFY
+↓
+COMMIT
+↓
+REPORT
+
+
+======================================================================
+108. START-OF-DAY CHECK
+
+Перед началом дня:
+
+1. Открыть текущий план.
+2. Проверить вчерашний результат.
+3. Проверить Git status.
+4. Проверить tests.
+5. Проверить открытые bugs.
+6. Проверить blockers.
+7. Выбрать задачи текущего дня.
+
+
+======================================================================
+109. END-OF-DAY CHECK
+
+В конце дня:
+
+1. Выполнить tests.
+2. Выполнить lint.
+3. Проверить Git diff.
+4. Проверить requirements.
+5. Проверить security.
+6. Сделать commit.
+7. Обновить progress.
+8. Обновить plan.
+
+
+======================================================================
+110. DAILY REPORT
+
+Формат:
+
+DAY X REPORT
+
+Completed:
+...
+
+Tests:
+...
+
+Bugs:
+...
+
+Security:
+...
+
+Git:
+...
+
+Requirements completed:
+...
+
+Requirements remaining:
+...
+
+Blockers:
+...
+
+Next day:
+...
+
+
+======================================================================
+111. WEEKLY REVIEW
+
+Каждые 7 дней:
+
+• проверить прогресс;
+• проверить архитектуру;
+• проверить технический долг;
+• проверить тесты;
+• проверить безопасность;
+• проверить performance;
+• проверить database;
+• проверить requirements.
+
+После этого создать новый план
+на следующие 7 дней.
+
+
+======================================================================
+112. PLAN ADAPTATION
+
+План НЕ является неизменным.
+
+Если появилась новая информация:
+
+• API отличается;
+• обнаружен bug;
+• изменилось требование;
+• обнаружена архитектурная проблема;
+• возник security issue;
+
+ИИ может изменить план.
+
+НО обязан показать:
+
+OLD PLAN
+NEW PLAN
+REASON
+
+
+======================================================================
+113. NO FAKE COMPLETION
+
+Задача считается выполненной только если:
+
+Implementation
++
+Tests
++
+Validation
++
+Review
++
+Requirements Check
+
+
+======================================================================
+114. PROGRESS METRICS
+
+Отслеживать:
+
+Requirements:
+X / Y
+
+Tasks:
+X / Y
+
+Tests:
+X / Y
+
+Critical Bugs:
+X
+
+High Bugs:
+X
+
+Technical Debt:
+X
+
+Security Issues:
+X
+
+
+======================================================================
+115. PROJECT MILESTONES
+
+Создать milestones:
+
+M1 Architecture
+M2 Database
+M3 ETL
+M4 Kaspi
+M5 Reconciliation
+M6 Production
+M7 Payroll
+M8 Security
+M9 API
+M10 Frontend
+M11 Testing
+M12 Docker
+M13 CI/CD
+M14 Deployment
+M15 Production Hardening
+
+
+======================================================================
+116. MILESTONE ACCEPTANCE
+
+Milestone нельзя считать завершенным,
+пока не выполнены его Acceptance Criteria.
+
+
+======================================================================
+117. USER APPROVAL
+
+После завершения milestone:
+
+STOP.
+
+Показать отчет.
+
+Ждать команды пользователя.
+
+НЕ переходить автоматически
+к следующему крупному milestone.
+
+
+======================================================================
+118. LONG-TERM DEVELOPMENT
+
+Проект должен развиваться постепенно.
+
+Приоритет:
+
+Correctness
+Security
+Data Integrity
+Testing
+Maintainability
+Performance
+Speed
+
+
+======================================================================
+119. ARCHITECTURE BEFORE CODE
+
+Если задача достаточно большая,
+сначала:
+
+Architecture
+↓
+Design
+↓
+Plan
+↓
+Implementation
+↓
+Testing
+
+
+======================================================================
+120. FINAL PROJECT PLAN
+
+Перед первым кодом показать:
+
+PROJECT ROADMAP
+
+Week 1
+...
+
+Week 2
+...
+
+Milestones
+...
+
+Critical Path
+...
+
+Risks
+...
+
+Dependencies
+...
+
+Unknowns
+...
+
+Acceptance Criteria
+...
+
+
+======================================================================
+121. PLAN VERSIONING
+
+Каждый новый план имеет версию:
+
+PLAN v1.0
+PLAN v1.1
+PLAN v2.0
+
+Изменения плана должны быть объяснены.
+
+
+======================================================================
+122. REQUIREMENTS TRACEABILITY
+
+Каждая задача должна ссылаться
+на соответствующие REQ-ID.
+
+Например:
+
+TASK-042
+
+implements:
+
+REQ-0012
+REQ-0047
+REQ-0091
+
+
+======================================================================
+123. TASK STATUS
+
+Каждая задача имеет статус:
+
+BACKLOG
+PLANNED
+IN_PROGRESS
+BLOCKED
+IN_REVIEW
+TESTING
+DONE
+DEFERRED
+
+
+======================================================================
+124. BLOCKERS
+
+Если задача BLOCKED:
+
+НЕ обходить проблему молча.
+
+Показать:
+
+Blocker
+Cause
+Impact
+Possible Solutions
+Recommended Solution
+
+
+======================================================================
+125. TECHNICAL DEBT
+
+Любое сознательное упрощение,
+которое необходимо временно оставить,
+добавлять в:
+
+TECHNICAL_DEBT.md
+
+Содержать:
+
+ID
+Description
+Reason
+Risk
+Priority
+Planned Resolution
+
+
+======================================================================
+126. ARCHITECTURAL DECISION RECORDS
+
+Важные архитектурные решения
+фиксировать в ADR.
+
+Например:
+
+ADR-001
+Почему PostgreSQL.
+
+ADR-002
+Почему FastAPI.
+
+ADR-003
+Почему Streamlit.
+
+ADR-004
+Почему Supabase не является обязательным.
+
+ADR-005
+Почему PostgreSQL не exposed to Internet.
+
+
+======================================================================
+127. SECURITY PLANNING
+
+Security задачи должны появляться
+не только в конце проекта.
+
+Security проверяется:
+
+Architecture
+Database
+API
+Authentication
+Frontend
+Deployment
+
+
+======================================================================
+128. DATABASE PLANNING
+
+До реализации сложных database features
+проверять:
+
+schema
+relationships
+indexes
+constraints
+transactions
+locking
+migrations
+backup
+
+
+======================================================================
+129. FINANCIAL FEATURE PLANNING
+
+Любая финансовая функция должна иметь:
+
+business rule
+formula
+database representation
+transaction boundary
+audit
+test
+rollback/correction strategy
+
+
+======================================================================
+130. PRODUCTION FEATURE PLANNING
+
+Любая производственная функция должна иметь:
+
+input
+operation
+employee
+order
+quantity
+rate
+cost
+validation
+audit
+report
+
+
+======================================================================
+131. INTEGRATION FEATURE PLANNING
+
+Любая внешняя интеграция должна иметь:
+
+authentication
+timeout
+retry
+idempotency
+logging
+raw payload
+validation
+error handling
+reconciliation
+tests
+
+
+======================================================================
+132. RELEASE PLAN
+
+Перед production:
+
+Development
+↓
+Testing
+↓
+Staging
+↓
+Security Review
+↓
+Backup Test
+↓
+Migration Test
+↓
+Deployment
+↓
+Smoke Test
+↓
+Monitoring
+
+
+======================================================================
+133. ROLLBACK PLAN
+
+Каждый production release должен иметь:
+
+Rollback Strategy.
+
+Особенно:
+
+database migration
+application deployment
+configuration
+
+
+======================================================================
+134. FINAL PROJECT AUDIT
+
+Перед production:
+
+Requirements Audit
+Security Audit
+Database Audit
+API Audit
+Financial Audit
+Testing Audit
+Performance Audit
+Deployment Audit
+Backup Audit
+Documentation Audit
+
+
+======================================================================
+135. FINAL RULE
+
+НЕ СТРЕМИСЬ ЗАКОНЧИТЬ ПРОЕКТ БЫСТРЕЕ.
+
+СТРЕМИСЬ СОЗДАТЬ:
+
+НАДЕЖНУЮ
+БЕЗОПАСНУЮ
+ПРОВЕРЕННУЮ
+МАСШТАБИРУЕМУЮ
+ПОДДЕРЖИВАЕМУЮ
+
+production-систему.

@@ -1,0 +1,2084 @@
+FINANCE-OPS-001
+FINANCIAL OPERATIONS / MANAGEMENT / CONTROL / KASPI RECONCILIATION
+Ты работаешь как senior/staff-level инженер над существующим production ERP проекта.
+Текущая recovery-задача уже ЗАКРЫТА.
+CURRENT VERIFIED BASELINE
+Последний подтверждённый commit:
+c5ad6fa1bb2353da8fac75862602cfc97756f816
+Подтверждено:
+• full regression: 386 passed;
+• teardown errors: отсутствуют;
+• Ruff: PASS;
+• Mypy: PASS;
+• Alembic heads/current/check: PASS;
+• i18n AST/runtime checks: PASS;
+• test isolation: PASS;
+• security/secrets review: PASS;
+• working tree: clean.
+НЕ возвращайся к recovery без реальной причины.НЕ переделывай TD-015 и TD-016.НЕ начинай общий аудит всего проекта.
+
+───
+
+1. НОВАЯ ЦЕЛЬ
+Следующий этап называется:
+FINANCE-OPS-001 — Financial Operations, Management, Control & Reconciliation
+Цель этапа:
+Создать надёжное финансово-операционное ядро ERP, в котором владелец бизнеса сможет в любой момент понять:
+• сколько денег было;
+• сколько пришло;
+• сколько ушло;
+• куда ушло;
+• почему ушло;
+• откуда пришло;
+• за какую продажу;
+• за какой заказ;
+• за какой ИП;
+• через какой канал оплаты;
+• какая комиссия;
+• какой возврат;
+• какая себестоимость;
+• сколько материалов потрачено;
+• сколько начислено сотрудникам;
+• сколько фактически выплачено;
+• какая прибыль/маржа;
+• какие операции требуют проверки;
+• где есть расхождения;
+• кто создал/изменил/подтвердил операцию;
+• какое первичное основание существует;
+• как одна сумма связана с другими операциями.
+Система должна быть пригодна для реального бизнеса, а не только для демонстрационного CRUD.
+
+───
+
+2. СНАЧАЛА ИЗУЧИ СУЩЕСТВУЮЩИЙ ПРОЕКТ
+До изменения кода:
+1. Изучи текущую структуру Project.
+2. Изучи существующие модели.
+3. Изучи migrations.
+4. Изучи finance-модуль.
+5. Изучи Kaspi-модули.
+6. Изучи orders/sales.
+7. Изучи materials/production.
+8. Изучи payroll.
+9. Изучи RBAC.
+10. Изучи audit.
+11. Изучи API.
+12. Изучи Streamlit frontend.
+13. Изучи существующую i18n.
+14. Изучи tests.
+15. Изучи Requirements Matrix.
+16. Изучи уже существующие Skills, но загружай только действительно относящиеся к текущей задаче.
+17. Не создавай вторую архитектуру, если нужная уже существует.
+Используй Skills по необходимости:
+• systematic debugging;
+• verification-before-completion;
+• TDD;
+• database/PostgreSQL;
+• financial/accounting;
+• security;
+• authorization/RBAC;
+• audit/logging;
+• Streamlit;
+• testing;
+• Git/release engineering.
+Skills являются методикой, а не источником бизнес-истины.
+
+───
+
+3. НЕ ПРИДУМЫВАЙ БИЗНЕС-ПРАВИЛА
+Разделяй:
+A. Подтверждённые требования проекта
+B. Официальные требования Казахстана
+C. Официальная документация Kaspi
+D. Технические best practices
+E. Предложение/decision, которое требует фиксации как ADR
+Если информации недостаточно:
+DEFERRED / BLOCKED / OQ
+а не выдумывай.
+Особенно:
+НЕ придумывай Kaspi API endpoints, поля, статусы или бизнес-правила.
+Используй официальную документацию Kaspi.
+
+───
+
+4. ОСНОВОПОЛАГАЮЩИЙ ПРИНЦИП
+Нельзя моделировать бизнес следующим образом:
+продажа = деньги
+или:
+Kaspi заказ = банковская операция
+или:
+payout = sale
+или:
+payment = accounting entry
+Разделяй как минимум:
+text
+ORDER
+SALE
+PAYMENT
+COMMISSION
+REFUND
+PAYOUT
+BANK TRANSACTION
+TRANSFER
+EXPENSE
+REVENUE
+COST
+ACCOUNTING/FINANCIAL OPERATION
+
+Связи между ними должны быть явными.
+Пример:
+text
+Kaspi Order
+    ↓
+Order
+    ↓
+Production
+    ↓
+Completed Sale
+    ↓
+Payment
+    ↓
+Kaspi Commission
+    ↓
+Payout
+    ↓
+Bank Transaction
+    ↓
+Reconciliation
+
+Если существующая архитектура использует другие имена сущностей — адаптируй концепцию к ней, а не создавай дубли.
+
+───
+
+5. ФИНАНСОВАЯ ОПЕРАЦИЯ
+Каждая значимая финансовая операция должна иметь максимально полный provenance:
+text
+operation_id
+operation_type
+status
+occurred_at
+recorded_at
+legal_entity / IP
+account
+counterparty
+amount
+currency
+direction
+source
+source_external_id
+business_document
+document_number
+document_date
+description
+comment
+created_by
+approved_by
+created_at
+updated_at
+related_operation
+reversal_of
+
+Используй только те поля, которые действительно нужны существующей модели.
+Главный принцип:
+Любая сумма должна иметь объяснимое происхождение.
+
+───
+
+6. OPERATION LIFECYCLE
+Не разрешай произвольное изменение финансовой операции.
+Проработай подходящий lifecycle, например:
+text
+DRAFT
+    ↓
+PENDING_REVIEW
+    ↓
+APPROVED
+    ↓
+POSTED
+
+и отдельно:
+text
+POSTED
+    ↓
+REVERSED
+
+или эквивалентную модель, если текущая архитектура уже имеет корректную.
+Не копируй этот enum вслепую.
+Сначала исследуй существующую модель.
+
+───
+
+7. ПОСЛЕ POSTED
+После проведения операции:
+НЕ разрешать обычный UPDATE суммы.
+НЕ разрешать изменение:
+• amount;
+• direction;
+• legal entity;
+• account;
+• source;
+• document;
+• transaction identity;
+если изменение нарушает финансовую историю.
+Исправление должно выполняться через:
+• reversal;
+• correction;
+• refund;
+• adjustment;
+в зависимости от типа операции.
+Пример:
+text
+SALE +500 000
+
+ошибка
+
+REVERSAL -500 000
+
+CORRECT SALE +50 000
+
+Старая операция остаётся в истории.
+
+───
+
+8. ПЕРВИЧНЫЙ ДОКУМЕНТ
+Учитывай требования законодательства РК.
+Бухгалтерские записи должны иметь основание в первичных документах.
+Для внутреннего документа обеспечь необходимые реквизиты, где это применимо:
+• название;
+• дата;
+• организация/ИП;
+• содержание операции;
+• единица измерения;
+• количество;
+• стоимость;
+• идентификатор документа;
+• источник.
+Не называй внутренний комментарий первичным документом.
+Разделяй:
+text
+DOCUMENT
+COMMENT
+AUDIT EVENT
+BUSINESS REASON
+
+
+───
+
+9. КОММЕНТАРИИ
+Добавь/улучши возможность комментариев там, где это действительно нужно:
+• продажа;
+• расход;
+• перевод;
+• возврат;
+• корректировка;
+• payout;
+• reconciliation;
+• payroll adjustment;
+• production adjustment.
+Комментарий должен показывать:
+зачем операция была создана/скорректирована.
+Но:
+comment != accounting evidence
+
+───
+
+10. TRACEABILITY
+Добавь концепцию:
+"Откуда взялась эта сумма?"
+Для каждой финансовой суммы пользователь должен иметь возможность открыть:
+text
+Origin
+↓
+Related documents
+↓
+Related order
+↓
+Related sale
+↓
+Payment
+↓
+Commission
+↓
+Payout
+↓
+Bank transaction
+↓
+Reconciliation
+
+Не обязательно физически создавать новую таблицу, если существующие связи позволяют построить такую цепочку.
+Сначала используй существующие relationships.
+
+───
+
+11. FINANCIAL TIMELINE
+Создай понятное представление движения денег.
+Пример:
+text
+09:12  SALE #10452             +350 000 ₸
+09:15  KASPI PAYMENT           +350 000 ₸
+09:17  KASPI COMMISSION          -3 325 ₸
+10:04  MATERIAL PURCHASE        -80 000 ₸
+11:30  PAYROLL                  -25 000 ₸
+14:20  REFUND                   -50 000 ₸
+15:10  CORRECTION                  +500 ₸
+
+Внизу:
+text
+INFLOW
+OUTFLOW
+NET MOVEMENT
+
+Но не смешивай:
+• accounting profit;
+• cash movement;
+• bank balance;
+• receivable;
+• payable.
+Это разные показатели.
+
+───
+
+12. MANAGEMENT DASHBOARD
+Создай/улучши Dashboard таким образом, чтобы руководитель мог открыть систему и за несколько секунд понять состояние бизнеса.
+Минимальные блоки:
+TODAY
+• Sales
+• Refunds
+• Revenue
+• Expenses
+• Payroll
+• Materials
+• Commissions
+• Transfers
+• Net cash movement
+PERIOD
+• Today
+• Week
+• Month
+• Quarter
+• Year
+• Custom period
+MONEY
+• Bank balance
+• Kaspi Pay balance
+• Cash
+• Expected payouts
+• Receivables
+• Payables
+BUSINESS
+• Orders
+• Completed sales
+• Cancelled orders
+• Returns
+• Average order
+• Production workload
+PROFITABILITY
+• Revenue
+• Direct materials
+• Piecework labor
+• Other direct costs
+• Gross margin
+• Operating expenses
+• Net result
+Не называй показатель "profit", если его расчёт не подтверждён корректной моделью.
+
+───
+
+13. "КУДА ДЕЛИСЬ МОИ ДЕНЬГИ?"
+Это отдельная функция.
+Пользователь выбирает:
+text
+Today
+This week
+This month
+Custom
+
+И система показывает:
+text
+START BALANCE
+
++ SALES
++ OTHER INFLOWS
++ PAYOUTS
+
+- MATERIALS
+- PAYROLL
+- SUPPLIERS
+- COMMISSIONS
+- REFUNDS
+- OPERATING EXPENSES
+- TRANSFERS OUT
+
+= ENDING BALANCE
+
+Обязательно учитывай:
+transfer ≠ expense
+Перевод денег между собственными счетами не должен автоматически становиться расходом.
+
+───
+
+14. DAILY / WEEKLY / MONTHLY REPORTING
+Нужны отчёты:
+Daily
+• opening balance;
+• inflow;
+• outflow;
+• sales;
+• refunds;
+• commissions;
+• payroll;
+• materials;
+• transfers;
+• closing balance;
+• unresolved discrepancies.
+Weekly
+То же + динамика по дням.
+Monthly
+• revenue;
+• expenses;
+• direct costs;
+• payroll;
+• materials;
+• commissions;
+• refunds;
+• net result;
+• cash movement;
+• outstanding reconciliation.
+Drill-down
+Каждая цифра должна быть кликабельной.
+Например:
+Expenses = 1 840 000 ₸
+→ открыть список операций, из которых состоит сумма.
+
+───
+
+15. PROFIT ≠ CASH
+Это критически важно.
+Отдельно показывай:
+text
+Revenue
+Expenses
+Profit / result
+Cash inflow
+Cash outflow
+Cash balance
+
+Например:
+Продажа может быть отражена как бизнес-событие, но деньги могут прийти позже.
+Поэтому нельзя рассчитывать прибыль просто:
+text
+Bank inflows - bank outflows
+
+
+───
+
+16. KASPI SHOP
+Используй официальные статусы и API только из официальной документации.
+Текущая документация Kaspi показывает отдельные статусы заказов, включая новые, принятые, упаковку, передачу, выдан, отменён и возврат.
+Не смешивай:
+text
+Order status
+Payment status
+Production status
+Payout status
+Refund status
+Reconciliation status
+
+Они должны существовать независимо.
+
+───
+
+17. KASPI PAYMENT
+Отдельно моделируй payment event.
+Минимально:
+text
+payment_id
+provider
+channel
+external_id
+order/sale relation
+amount
+currency
+status
+occurred_at
+raw payload
+idempotency identity
+
+Не создавай финансовую операцию повторно при retry.
+
+───
+
+18. KASPI COMMISSION
+Комиссия должна быть отдельной сущностью/операцией там, где это соответствует существующей модели.
+Официальные материалы Kaspi указывают, что комиссии отражаются отдельно и могут списываться с Kaspi Pay после поступления оплаты.
+Поэтому:
+text
+SALE
+≠ COMMISSION
+
+И Dashboard должен уметь показать:
+text
+Gross sale
+- commission
+- refund
+= Net amount
+
+только если расчёт действительно соответствует источнику данных.
+
+───
+
+19. KASPI PAYOUT
+Payout — отдельное событие.
+Не создавать:
+text
+SALE = PAYOUT
+
+Вместо этого:
+text
+SALE
+PAYMENT
+PAYOUT
+BANK CREDIT
+
+с явными связями.
+
+───
+
+20. RECONCILIATION
+Создай полноценную сверку:
+text
+Kaspi
+    ↕
+ERP
+    ↕
+Bank
+
+Статусы:
+text
+MATCHED
+PARTIAL_MATCH
+MISMATCH
+UNMATCHED
+NEEDS_REVIEW
+
+Если архитектура уже имеет другие названия — используй существующие.
+Показывай:
+text
+Expected
+Actual
+Difference
+Reason
+Resolution
+Resolved by
+Resolved at
+
+
+───
+
+21. RECONCILIATION EXAMPLE
+text
+Kaspi payout:
+1 245 300 ₸
+
+ERP expected:
+1 245 300 ₸
+
+Bank:
+1 245 300 ₸
+
+Difference:
+0 ₸
+
+Status:
+MATCHED
+
+При расхождении:
+text
+Kaspi:
+1 245 300
+
+ERP:
+1 245 300
+
+Bank:
+1 232 800
+
+Difference:
+-12 500
+
+Status:
+NEEDS_REVIEW
+
+Система должна помогать найти возможную причину:
+• commission;
+• refund;
+• correction;
+• duplicate;
+• missing transaction;
+• wrong period;
+• unknown transaction.
+Не утверждай причину автоматически без достаточного evidence.
+
+───
+
+22. UNKNOWN TRANSACTIONS
+Любая банковская/Kaspi операция без сопоставления должна попадать в:
+NEEDS REVIEW
+Пользователь должен иметь возможность:
+• открыть;
+• посмотреть источник;
+• назначить связь;
+• оставить комментарий;
+• указать причину;
+• подтвердить;
+• отклонить;
+• создать корректирующую операцию, если это разрешено.
+
+───
+
+23. DUPLICATE PROTECTION
+Все внешние финансовые события должны иметь idempotency strategy.
+Не допускать повторного создания при:
+• API retry;
+• повторном webhook;
+• повторном импорте;
+• повторной загрузке Excel;
+• повторной синхронизации;
+• повторном запуске job.
+Тестируй duplicate event.
+
+───
+
+24. TRANSFERS
+Перевод между собственными счетами:
+text
+Account A
+    ↓
+TRANSFER
+    ↓
+Account B
+
+Не считать автоматически:
+text
+EXPENSE
+
+или:
+text
+REVENUE
+
+Обеспечь:
+• source account;
+• destination account;
+• amount;
+• date;
+• reason;
+• user;
+• status;
+• linked operation.
+
+───
+
+25. EXPENSES
+Расход должен иметь:
+• legal entity/IP;
+• account;
+• category;
+• counterparty;
+• amount;
+• date;
+• document;
+• comment;
+• creator;
+• approval;
+• status;
+• attachments если архитектура это поддерживает.
+Категории должны быть управляемыми и не захардкоженными в UI.
+
+───
+
+26. SALES
+Продажа должна показывать:
+• order;
+• customer;
+• products;
+• quantities;
+• prices;
+• frozen price;
+• gross amount;
+• discounts;
+• payment;
+• commission;
+• refund;
+• direct cost;
+• margin;
+• responsible user;
+• comments;
+• documents;
+• audit trail.
+
+───
+
+27. COSTING
+Для производства:
+text
+Direct cost =
+materials
++
+piecework labor
++
+other explicitly defined direct costs
+
+Не смешивать себестоимость с cash movement.
+Цена продажи должна быть отделена от себестоимости.
+
+───
+
+28. MATERIALS
+Для каждой операции с материалом:
+• material;
+• quantity;
+• unit;
+• price;
+• total;
+• warehouse/location;
+• reason;
+• linked production/order;
+• responsible user;
+• timestamp.
+Нельзя допускать необъяснимое отрицательное движение.
+Если отрицательный остаток допускается бизнесом — это должно быть отдельным явно разрешённым правилом, а не случайным побочным эффектом.
+
+───
+
+29. PAYROLL
+Для каждого начисления должна быть объяснимая формула.
+Например:
+text
+Assembly:
+17 × 2 000 = 34 000
+
+Sawing:
+12 × 150 = 1 800
+
+Salary:
+150 000
+
+Bonus:
+20 000
+
+Deduction:
+-5 000
+
+TOTAL:
+200 800
+
+Пользователь должен видеть:
+Why this amount?
+Каждая цифра должна иметь источник.
+
+───
+
+30. PAYROLL / PRODUCTION LINK
+Свяжи:
+text
+Employee
+↓
+Work entry
+↓
+Operation type
+↓
+Rate
+↓
+Quantity
+↓
+Piecework amount
+↓
+Payroll
+
+Rate freeze должен сохраняться.
+Изменение будущей ставки не должно задним числом менять историческое начисление.
+
+───
+
+31. PAYROLL CONTROL
+Добавь проверки:
+• work entry без employee;
+• work entry без rate;
+• invalid operation;
+• duplicate work entry;
+• payroll without basis;
+• changed historical rate;
+• suspicious amount;
+• missing approval.
+
+───
+
+32. "КОСЯКИ"
+Создай отдельный контрольный экран/виджет:
+ATTENTION REQUIRED
+Например:
+🔴 Unmatched bank transaction
+ 🔴 Kaspi payout mismatch
+ 🔴 Sale without payment
+ 🔴 Payment without sale
+ 🔴 Return without source sale
+ 🔴 Payroll without work entries
+ 🔴 Negative material balance
+ 🔴 Duplicate external transaction
+ 🟡 Missing document
+ 🟡 Operation awaiting approval
+ 🟡 Unresolved comment/request
+Каждый item должен открывать конкретную проблему.
+Не делай просто список warning'ов без drill-down.
+
+───
+
+33. AUDIT TRAIL
+Каждая чувствительная операция должна иметь историю:
+text
+WHO
+WHEN
+WHAT
+BEFORE
+AFTER
+WHY
+SOURCE
+
+Например:
+text
+18:42
+User: accountant01
+
+Changed:
+expense status
+
+FROM:
+DRAFT
+
+TO:
+APPROVED
+
+Reason:
+invoice verified
+
+Не записывай секреты, пароли, токены и чувствительные данные без необходимости.
+OWASP рекомендует отдельный audit trail для добавления, изменения, удаления и экспорта данных, а также защиту самих логов от изменения/удаления.
+
+───
+
+34. TRANSACTION AUTHORIZATION
+Для чувствительных операций:
+text
+CREATE
+→ REVIEW
+→ CONFIRM
+→ EXECUTE
+
+или соответствующий workflow.
+Нельзя позволять клиенту самостоятельно решать:
+text
+approved=true
+
+Авторизация должна проверяться server-side.
+OWASP отдельно рекомендует серверную enforcement transaction authorization, последовательность шагов и повторную проверку непосредственно перед выполнением операции.
+
+───
+
+35. RBAC
+Используй существующие роли:
+• ADMIN
+• DIRECTOR
+• ACCOUNTANT
+• HR
+• SHOP_MANAGER
+• BRIGADIER
+• VIEWER
+Не расширяй роли без необходимости.
+Проверь:
+VIEWER
+read-only.
+ACCOUNTANT
+financial operations согласно policy.
+DIRECTOR
+approval/high-risk operations.
+HR
+payroll/employee scope.
+SHOP_MANAGER
+orders/shop scope.
+BRIGADIER
+production/work-entry scope.
+ADMIN
+technical administration, но не обходи audit controls просто потому, что роль ADMIN.
+Все authorization checks должны выполняться на сервере.
+
+───
+
+36. OBJECT-LEVEL AUTHORIZATION
+Проверяй не только:
+text
+can user access /finance?
+
+но и:
+text
+can user access THIS operation?
+THIS IP?
+THIS account?
+THIS employee?
+THIS order?
+THIS document?
+
+Не допускай IDOR/BOLA.
+
+───
+
+37. THREE LANGUAGES
+Обязательные языки:
+text
+RU
+KZ
+EN
+
+Не только login.
+Проверить:
+• sidebar;
+• buttons;
+• tables;
+• forms;
+• statuses;
+• validation;
+• errors;
+• notifications;
+• Dashboard;
+• reports;
+• dialogs;
+• empty states;
+• filters;
+• export UI;
+• approval UI;
+• reconciliation UI.
+Каждый новый user-facing string должен иметь:
+text
+RU
+KZ
+EN
+
+Не использовать raw translation keys в UI.
+Не создавать вторую i18n систему.
+
+───
+
+38. LANGUAGE CONSISTENCY
+Если пользователь выбрал:
+text
+KZ
+
+не должно быть случайного:
+text
+Save
+Delete
+Status
+Loading
+
+если эти элементы должны быть локализованы.
+То же для RU и EN.
+Business data/comments, введённые пользователем, автоматически не переводить.
+
+───
+
+39. UX PRINCIPLE
+Операция должна быть:
+CLEAR → FAST → SAFE
+Пользователь должен понимать:
+1. Что он делает.
+2. На какую сумму.
+3. С какого счёта.
+4. На какой счёт.
+5. Почему.
+6. Какое основание.
+7. Что произойдёт после подтверждения.
+8. Можно ли отменить.
+9. Кто сможет это изменить.
+
+───
+
+40. FORM DESIGN
+Финансовые формы не должны быть перегружены.
+Разделяй:
+Основные поля
+то, что необходимо для операции.
+Дополнительные
+comment/document/reference.
+Advanced
+technical/provider information.
+Audit
+read-only.
+Не показывай технические IDs обычному пользователю без необходимости.
+
+───
+
+41. CONFIRMATION DIALOG
+Для значимых операций показывай:
+text
+Operation
+Amount
+Account
+Counterparty
+Document
+Reason
+
+и:
+text
+Confirm
+Cancel
+
+Для irreversible/high-risk операции обязательно явно объясни последствия.
+
+───
+
+42. MONEY DISPLAY
+Сохрани проектный стандарт:
+text
+1 234 567,00 ₸
+
+В БД:
+text
+NUMERIC(15,2)
+
+Не используй float для денег.
+
+───
+
+43. QUANTITY
+Сохрани:
+text
+NUMERIC(15,3)
+
+для количественных значений.
+Не используй float там, где точность влияет на деньги/остатки.
+
+───
+
+44. TIME
+Сохрани:
+text
+UTC in database
+Asia/Almaty in UI
+
+Все финансовые timestamps должны быть однозначными.
+
+───
+
+45. IMPORTS
+Excel/CSV/import операции должны иметь:
+• source;
+• import batch;
+• checksum/hash если применимо;
+• imported_at;
+• imported_by;
+• rows total;
+• rows accepted;
+• rows rejected;
+• duplicate count;
+• errors.
+Повторный импорт одного и того же файла не должен создавать дубликаты.
+
+───
+
+46. RAW PROVIDER DATA
+Для внешних API:
+сохраняй raw payload там, где это разрешено и необходимо для reconciliation/debugging.
+Используй существующую JSONB архитектуру.
+Не логируй secrets.
+
+───
+
+47. ERROR HANDLING
+Ошибка должна быть:
+text
+понятной человеку
+
+и одновременно:
+text
+технически диагностируемой
+
+Например:
+Плохо:
+500 Internal Server Error
+Хорошо:
+Операция не проведена: банковская транзакция уже была обработана.
+Но техническая причина должна оставаться доступной в защищённом application log.
+
+───
+
+48. PERFORMANCE
+Dashboard не должен выполнять десятки тяжёлых запросов без необходимости.
+Проверь:
+• indexes;
+• aggregation;
+• pagination;
+• date filtering;
+• query count;
+• N+1;
+• expensive joins.
+Особенно для:
+text
+daily dashboard
+monthly reports
+reconciliation
+financial timeline
+
+
+───
+
+49. DATABASE INTEGRITY
+Все важные бизнес-инварианты должны быть максимально защищены на уровне БД, где это возможно.
+Используй:
+• FK;
+• CHECK;
+• UNIQUE;
+• indexes;
+• appropriate constraints;
+• transactions.
+Не полагайся только на frontend validation.
+
+───
+
+50. ATOMIC OPERATIONS
+Финансовая операция и связанные изменения должны выполняться атомарно.
+Например:
+text
+create sale
++
+create payment
++
+create financial operation
++
+audit event
+
+либо всё успешно,
+либо ничего не должно оказаться в частично проведённом состоянии.
+
+───
+
+51. IDEMPOTENCY
+Для API и внешних интеграций:
+text
+same external event
+→ same logical result
+
+Повторный request не должен удваивать деньги.
+
+───
+
+52. CONCURRENCY
+Проверь race conditions для:
+• payment;
+• payout;
+• reconciliation;
+• payroll;
+• stock;
+• financial posting.
+Особенно:
+text
+two requests
+→ same operation
+→ no duplicate financial effect
+
+
+───
+
+53. REPORT EXPORT
+Отчёты должны поддерживать экспорт там, где это предусмотрено архитектурой:
+• Excel;
+• CSV;
+• PDF при необходимости.
+Экспорт также должен быть audit event.
+
+───
+
+54. FILTERS
+Финансовые таблицы:
+• date;
+• IP;
+• account;
+• operation type;
+• status;
+• counterparty;
+• source;
+• amount;
+• user;
+• reconciliation status.
+Периоды:
+text
+today
+week
+month
+quarter
+year
+custom
+
+
+───
+
+55. SEARCH
+Поиск должен работать по:
+• operation ID;
+• document number;
+• order number;
+• external provider ID;
+• counterparty;
+• comment;
+• amount where appropriate.
+
+───
+
+56. DRILL-DOWN
+Каждый aggregate metric:
+text
+Revenue
+Expenses
+Payroll
+Materials
+Commissions
+Refunds
+
+должен иметь путь:
+text
+metric
+→ transactions
+→ transaction detail
+→ source document
+→ related objects
+
+
+───
+
+57. FORMALITY OF OPERATIONS
+Сделай операции максимально формальными.
+Каждая значимая операция должна отвечать:
+text
+WHO?
+WHAT?
+WHEN?
+WHERE?
+HOW MUCH?
+FROM WHERE?
+TO WHERE?
+WHY?
+BASED ON WHAT?
+WHO APPROVED?
+WHAT CHANGED?
+
+Если на вопрос нельзя ответить — определить, является ли это допустимым отсутствием данных или дефектом модели.
+
+───
+
+58. NO SILENT MONEY
+Никаких:
+text
+money appeared
+money disappeared
+
+без источника.
+Каждое изменение денег должно быть объяснимым.
+
+───
+
+59. NO SILENT CORRECTIONS
+Нельзя:
+text
+UPDATE amount
+
+так, чтобы история исчезала.
+Корректировки должны оставлять след.
+
+───
+
+60. BUSINESS SAFETY
+Не допускай автоматического:
+• создания расхода из перевода;
+• создания дохода из любого банковского пополнения;
+• признания Kaspi order оплаченным только из-за статуса заказа;
+• признания payout продажей;
+• признания комиссии расходом без подтверждения модели;
+• признания refund обычным expense.
+Сначала определить смысл события.
+
+───
+
+61. DOCUMENTATION
+Создай/обнови документацию:
+text
+docs/
+  finance/
+  operations/
+  reconciliation/
+  kaspi/
+  payroll/
+
+Но не плодить документы без необходимости.
+Минимум:
+Financial Operations Model
+Что означает каждая операция.
+Lifecycle
+Как проходит операция.
+Reconciliation Model
+Как сопоставляются источники.
+Authorization Matrix
+Кто что может делать.
+Audit Model
+Что записывается.
+
+───
+
+62. REQUIREMENTS MATRIX
+Каждое новое требование должно получить ID.
+Например:
+text
+FIN-OPS-0001
+FIN-OPS-0002
+...
+
+Статусы:
+text
+PENDING
+IN_PROGRESS
+IMPLEMENTED
+TESTED
+DEFERRED
+BLOCKED
+CONFLICT
+
+Не ставить IMPLEMENTED без реализации.
+Не ставить TESTED без фактического теста.
+
+───
+
+63. ADR
+Если принимается существенное архитектурное решение:
+создай ADR.
+Например:
+• separation Order/Sale/Payment/Payout;
+• posting model;
+• reversal model;
+• reconciliation model;
+• authorization workflow;
+• audit model.
+
+───
+
+64. TEST STRATEGY
+Для каждого критического financial flow:
+Unit
+formula/invariants.
+Integration
+DB transaction.
+API
+authorization/status.
+Regression
+existing behavior.
+Negative
+invalid operations.
+Security
+unauthorized access.
+Concurrency
+duplicate execution.
+Idempotency
+repeat request.
+Reconciliation
+matched/mismatch.
+
+───
+
+65. MANDATORY TEST CASES
+Минимум проверь:
+1. sale created once;
+2. duplicate sale prevented;
+3. payment linked;
+4. duplicate payment prevented;
+5. commission separate;
+6. refund linked to original sale;
+7. payout linked;
+8. bank transaction reconciled;
+9. mismatch detected;
+10. transfer not counted as expense;
+11. reversal preserves history;
+12. posted operation cannot silently mutate;
+13. unauthorized user denied;
+14. wrong object access denied;
+15. payroll formula reproducible;
+16. rate freeze works;
+17. material movement correct;
+18. dashboard totals equal underlying records;
+19. report drill-down matches aggregate;
+20. import duplicate prevented;
+21. comments preserved;
+22. audit event created;
+23. RU/KZ/EN strings present;
+24. runtime language switching works.
+Добавляй дополнительные тесты по обнаруженным рискам.
+
+───
+
+66. PROPERTY / INVARIANT TESTING
+Для денег особенно проверяй:
+text
+opening
++ inflow
+- outflow
+= closing
+
+где это применимо.
+И:
+text
+aggregate
+=
+sum(detail)
+
+И:
+text
+reconciled
+→ difference = 0
+
+И:
+text
+reversal
+→ original remains immutable/history-preserved
+
+
+───
+
+67. SECURITY
+Следовать существующему security baseline проекта.
+Дополнительно проверить:
+• server-side authorization;
+• object-level authorization;
+• audit;
+• CSRF/session protection where applicable;
+• input validation;
+• SQL injection protection;
+• secret handling;
+• external API credentials;
+• export authorization;
+• sensitive report authorization.
+
+───
+
+68. AUDIT LOG PROTECTION
+Audit records должны быть:
+• append-oriented;
+• защищены от обычного редактирования;
+• доступны только соответствующим ролям;
+• сами access events должны контролироваться.
+Не логировать:
+• passwords;
+• API tokens;
+• encryption keys;
+• sensitive secrets.
+OWASP подчёркивает необходимость защиты audit/log data от несанкционированного изменения и удаления.
+
+───
+
+69. UI DESIGN
+Не делай UI просто красивым.
+Приоритет:
+text
+1. correctness
+2. clarity
+3. speed
+4. safety
+5. visual polish
+
+Финансовая таблица должна быть компактной, но не скрывать существенные данные.
+Используй:
+• статус badges;
+• clear amounts;
+• consistent formatting;
+• filters;
+• drill-down;
+• confirmation;
+• warnings;
+• empty states;
+• loading states;
+• error states.
+
+───
+
+70. MOBILE / SMALL SCREEN
+Если текущий Streamlit UI позволяет:
+Проверь хотя бы usability на узком экране.
+Основные действия должны оставаться доступными:
+• создать;
+• открыть;
+• подтвердить;
+• найти;
+• посмотреть сумму;
+• посмотреть статус.
+
+───
+
+71. DO NOT OVERENGINEER
+Не создавать:
+• новый event bus без необходимости;
+• новую accounting engine без необходимости;
+• новую ORM;
+• новую i18n систему;
+• новый authorization framework;
+• отдельный frontend stack.
+Сначала максимально используй существующий проект.
+
+───
+
+72. IMPLEMENTATION ORDER
+Работай строго по этапам:
+PHASE 0 — DISCOVERY
+Исследуй текущую архитектуру.
+Результат:
+• current model;
+• gaps;
+• conflicts;
+• reusable components.
+
+───
+
+PHASE 1 — DOMAIN MODEL
+Определи:
+• operations;
+• statuses;
+• relationships;
+• invariants;
+• lifecycle.
+Не кодируй UI раньше.
+
+───
+
+PHASE 2 — DATABASE
+Измени schema только если действительно необходимо.
+Создай migrations.
+Проверь:
+text
+constraints
+indexes
+FK
+unique
+check
+transaction behavior
+
+
+───
+
+PHASE 3 — SERVICE LAYER
+Реализуй:
+• posting;
+• reversal;
+• correction;
+• authorization;
+• idempotency;
+• reconciliation;
+• calculations.
+Business logic не должна жить только в Streamlit.
+
+───
+
+PHASE 4 — API
+Создай/улучши API:
+• list;
+• detail;
+• create;
+• review;
+• approve;
+• post;
+• reverse;
+• reconcile;
+• reports.
+Проверяй RBAC/object-level authorization.
+
+───
+
+PHASE 5 — KASPI
+Интегрируй только подтверждённые API.
+Не придумывай endpoints.
+Отдельно:
+• Shop;
+• Pay;
+• payment;
+• payout;
+• commissions;
+• refunds;
+• reconciliation.
+
+───
+
+PHASE 6 — DASHBOARD
+После backend correctness:
+• daily;
+• weekly;
+• monthly;
+• cash;
+• profitability;
+• control;
+• reconciliation.
+
+───
+
+PHASE 7 — UI OPERATIONS
+Формы:
+• sale;
+• expense;
+• transfer;
+• payment;
+• refund;
+• correction;
+• reconciliation.
+
+───
+
+PHASE 8 — PAYROLL / PRODUCTION LINK
+Проверить:
+• work entries;
+• rates;
+• payroll;
+• costing;
+• materials.
+Не сломать существующий MRP.
+
+───
+
+PHASE 9 — I18N
+RU/KZ/EN.
+
+───
+
+PHASE 10 — TESTING
+Полный тестовый цикл.
+
+───
+
+73. VERIFICATION GATE
+Нельзя объявлять этап завершённым только потому, что код написан.
+Минимальный final gate:
+text
+pytest -q
+ruff check .
+mypy app
+alembic heads
+alembic current --check-heads
+alembic check
+git diff --check
+
+И соответствующие targeted tests.
+
+───
+
+74. DATABASE VERIFICATION
+На чистой тестовой БД проверить:
+• migrations;
+• constraints;
+• seed/reference data;
+• transaction rollback;
+• cleanup;
+• financial invariants.
+Не использовать production DB для destructive tests.
+
+───
+
+75. MUTATION TESTING
+Для критических финансовых правил, где это оправдано:
+временно ломать:
+• authorization;
+• duplicate protection;
+• calculation;
+• reversal;
+• reconciliation;
+и убеждаться, что тесты действительно падают.
+После mutation:
+обязательно восстановить код.
+
+───
+
+76. REGRESSION SAFETY
+Нельзя ломать:
+• TD-015;
+• TD-016;
+• auth;
+• RBAC;
+• existing finance;
+• Kaspi;
+• payroll;
+• production;
+• i18n.
+Перед завершением прогонить regression.
+
+───
+
+77. GIT DISCIPLINE
+Коммиты должны быть логическими.
+Не создавать огромный случайный commit из unrelated changes.
+Перед commit:
+text
+git status
+git diff --check
+tests
+lint
+mypy
+migration check
+
+После:
+text
+git status
+git log -1 --oneline
+
+Working tree должен быть чистым, если задача завершена.
+
+───
+
+78. NO STUBS
+Запрещено оставлять:
+text
+TODO
+FIXME
+pass
+...
+stub
+placeholder
+fake data
+mock production behavior
+
+в production path.
+Если функциональность объективно заблокирована:
+text
+DEFERRED
+
+с причиной и tracking ID.
+
+───
+
+79. EXTERNAL BLOCKER
+Если Kaspi API требует информацию, которой нет:
+НЕ придумывай.
+Создай:
+text
+BLOCKED / OQ
+
+с:
+• what is missing;
+• why it is required;
+• official source needed;
+• impact.
+
+───
+
+80. PERFORMANCE VERIFICATION
+После реализации:
+проверь:
+• Dashboard query count;
+• N+1;
+• expensive joins;
+• indexes;
+• report performance;
+• reconciliation performance.
+Не оптимизируй вслепую.
+Сначала измерь.
+
+───
+
+81. FINAL BUSINESS SCENARIO
+Обязательно воспроизведи end-to-end:
+text
+Customer places order
+        ↓
+Order accepted
+        ↓
+Production
+        ↓
+Materials consumed
+        ↓
+Work entries
+        ↓
+Payroll calculation
+        ↓
+Order completed
+        ↓
+Sale/payment
+        ↓
+Kaspi commission
+        ↓
+Payout
+        ↓
+Bank transaction
+        ↓
+Reconciliation
+        ↓
+Dashboard
+        ↓
+Profit/cash report
+
+На каждом этапе должно быть понятно:
+text
+what happened
+who did it
+when
+how much
+why
+what document/source
+what is linked
+
+
+───
+
+82. FINAL OWNER VIEW
+Представь, что владелец открывает систему утром.
+Он должен за 30 секунд увидеть:
+text
+TODAY
+
+Sales              1 840 000 ₸
+Refunds             -120 000 ₸
+Expenses            -865 000 ₸
+Payroll             -280 000 ₸
+Commissions          -43 700 ₸
+
+Cash movement       +531 300 ₸
+
+Bank                 ...
+Kaspi Pay            ...
+Cash                 ...
+
+Unreconciled:
+3
+
+Attention:
+5
+
+Orders:
+...
+
+Production:
+...
+
+Payroll:
+...
+
+И каждую цифру можно открыть.
+
+───
+
+83. FINAL QUESTION THE SYSTEM MUST ANSWER
+ERP должна отвечать на вопросы:
+Деньги
+Сколько денег у бизнеса сейчас?
+Доход
+Сколько продали?
+Расход
+На что потратили?
+Прибыль
+Сколько реально заработали согласно используемой модели учёта?
+Kaspi
+За какие продажи пришли деньги?
+Bank
+Какая банковская операция соответствует продаже/payout?
+Payroll
+Почему сотруднику начислено именно столько?
+Materials
+На что ушёл материал?
+Errors
+Где есть расхождение?
+Audit
+Кто это сделал?
+Correction
+Почему сумма изменилась?
+Documents
+На основании какого документа?
+
+───
+
+84. IMPORTANT ACCOUNTING DISTINCTION
+Не пытайся одним Dashboard показателем заменить бухгалтерский учёт.
+Явно различай:
+text
+cash movement
+revenue
+expense
+cost
+profit/result
+receivable
+payable
+inventory
+transfer
+
+Если текущая система ещё не реализует полноценный double-entry accounting, не притворяйся, что она его реализует.
+Если полноценный accounting ledger необходим для следующего этапа — зафиксируй это как отдельный requirement/ADR, а не создавай скрытую псевдобухгалтерию.
+
+───
+
+85. DOCUMENTATION OF BUSINESS RULES
+Для каждого типа операции создай понятное определение:
+text
+NAME
+PURPOSE
+WHEN CREATED
+SOURCE
+AMOUNT FORMULA
+STATUS FLOW
+WHO CAN CREATE
+WHO CAN APPROVE
+WHO CAN REVERSE
+WHAT IT AFFECTS
+WHAT IT DOES NOT AFFECT
+RELATED OBJECTS
+AUDIT REQUIREMENTS
+
+Это станет основой формальной модели ERP.
+
+───
+
+86. FINAL QUALITY STANDARD
+Не оптимизируй под:
+"тесты прошли"
+Оптимизируй под:
+"операцию невозможно неправильно понять, незаметно изменить, дважды провести или потерять из финансовой истории."
+
+───
+
+87. WORKING MODE
+Работай автономно.
+Не спрашивай разрешения на очевидные инженерные решения.
+Спрашивай только если:
+• есть реальная бизнес-неопределённость;
+• есть конфликт требований;
+• отсутствует необходимая официальная информация;
+• действие может необратимо повредить данные;
+• существует несколько materially different accounting interpretations.
+В остальных случаях:
+исследуй → выбери безопасный вариант → зафиксируй ADR если нужно → реализуй → протестируй.
+
+───
+
+88. НЕ ДЕЛАЙ ВСЁ ЗА ОДИН ПРОХОД
+Сначала составь внутренний план этапа.
+Разбей работу на последовательные задачи:
+text
+FIN-OPS-0001
+FIN-OPS-0002
+...
+
+План должен покрывать domain → DB → service → API → Kaspi → reconciliation → dashboard → UI → payroll → i18n → tests → security → documentation.
+Не пытайся закончить весь FINANCE-OPS-001 за один огромный coding pass.
+Каждый значимый шаг:
+text
+IMPLEMENT
+→ TEST
+→ REVIEW
+→ UPDATE REQUIREMENTS
+→ NEXT
+
+
+───
+
+89. NO ENDLESS LOOP
+Не повторяй одну и ту же неудачную команду бесконечно.
+Если инфраструктура снова ломается:
+text
+INFRASTRUCTURE-BLOCKED
+
+и укажи:
+• последнюю успешную проверку;
+• команду;
+• точку остановки;
+• что осталось.
+
+───
+
+90. FINAL REPORT
+После завершения предоставь:
+text
+STATUS:
+PHASE:
+COMMIT:
+
+IMPLEMENTED:
+- ...
+
+DATABASE:
+- ...
+
+API:
+- ...
+
+KASPI:
+- ...
+
+RECONCILIATION:
+- ...
+
+DASHBOARD:
+- ...
+
+PAYROLL:
+- ...
+
+I18N:
+- RU
+- KZ
+- EN
+
+SECURITY:
+- ...
+
+AUDIT:
+- ...
+
+TESTS:
+- ...
+
+RUFF:
+- ...
+
+MYPY:
+- ...
+
+ALEMBIC:
+- ...
+
+REGRESSION:
+- ...
+
+DOCUMENTATION:
+- ...
+
+DEFERRED:
+- ...
+
+BLOCKED:
+- ...
+
+NEXT EXACT STEP:
+- ...
+
+
+───
+
+ABSOLUTE RULES
+1. Не выдумывай Kaspi API.
+2. Не выдумывай бухгалтерские требования.
+3. Не смешивай order/payment/payout/bank transaction.
+4. Не смешивай cash и profit.
+5. Не превращай transfer в expense.
+6. Не изменяй проведённые финансовые операции молча.
+7. Не удаляй финансовую историю физическим DELETE.
+8. Не позволяй frontend определять authorization.
+9. Не храни secrets в Git.
+10. Не создавай вторую i18n систему.
+11. RU/KZ/EN обязательны.
+12. Каждая значимая сумма должна иметь provenance.
+13. Каждая корректировка должна иметь audit trail.
+14. Каждая внешняя финансовая операция должна иметь idempotency protection.
+15. Каждый critical financial flow должен иметь negative tests.
+16. Не объявляй PASS без фактического результата.
+17. Не ломай уже закрытые TD-015/TD-016.
+18. Не делай общий аудит вместо текущей задачи.
+19. Не загружай все Skills подряд.
+20. Качество финансовой модели важнее скорости реализации.
+НАЧНИ С PHASE 0 DISCOVERY.
+Сначала изучи существующий проект и составь структурированный план FINANCE-OPS-001 с конкретными task IDs, зависимостями, рисками и критериями готовности.
+НЕ начинай массово менять код до завершения discovery и фиксации плана.

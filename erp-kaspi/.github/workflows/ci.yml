@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    # §16: run on all branches — feature branches (fin-ops-*, arch-refactor-*)
+    # get CI on direct push, not only via PR.
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: "5432"
+      DATABASE_USER: erp_app
+      DATABASE_PASSWORD: erp_ci_pass
+      DB_MIGRATOR_PASSWORD: erp_ci_migrator_pass
+      DATABASE_NAME: erp_test
+      TEST_DATABASE_NAME: erp_test
+      PYTHONPATH: ${{ github.workspace }}
+      PGPASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies (runtime + dev tools)
+        # requirements-dev.txt pins the CI toolchain (pytest/ruff/mypy/pip-audit);
+        # installing it separately keeps the production image lean (audit #1, #5).
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Provision roles and databases
+        run: |
+          # TD-008: the migrator role owns the schema; erp_app is DML-only.
+          psql -h 127.0.0.1 -U postgres -c "CREATE ROLE erp_app LOGIN PASSWORD 'erp_ci_pass';"
+          psql -h 127.0.0.1 -U postgres -c "CREATE ROLE erp_migrator LOGIN PASSWORD 'erp_ci_migrator_pass';"
+          psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE erp_test OWNER erp_migrator;"
+          psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE erp_alembic_test OWNER erp_migrator;"
+
+      - name: "Apply schema (idempotency: apply twice, §87)"
+        run: |
+          DB_NAME=erp_test DB_USER=erp_migrator DB_PASSWORD=erp_ci_migrator_pass \
+            bash scripts/apply_schema.sh
+          DB_NAME=erp_test DB_USER=erp_migrator DB_PASSWORD=erp_ci_migrator_pass \
+            bash scripts/apply_schema.sh
+
+      - name: TD-008 role split (erp_migrator DDL / erp_app DML-only)
+        run: |
+          DB_NAME=erp_test DB_ADMIN_HOST=127.0.0.1 DB_ADMIN_PASSWORD=postgres \
+            DB_APP_USER=erp_app DB_MIGRATOR_PASSWORD=erp_ci_migrator_pass \
+            bash scripts/split_db_roles.sh
+
+      - name: STEP 1 self-audit (§90)
+        run: |
+          DATABASE_URL="postgresql://erp_app:erp_ci_pass@127.0.0.1:5432/erp_test" \
+            python scripts/audit_step1.py
+
+      - name: Alembic baseline on a clean database
+        run: |
+          DATABASE_HOST=127.0.0.1 \
+          DATABASE_NAME=erp_alembic_test \
+          DATABASE_USER=erp_migrator \
+          DATABASE_PASSWORD=erp_ci_migrator_pass \
+          alembic upgrade head
+
+      - name: Alembic check (models ↔ migrations drift, audit #24)
+        run: |
+          DATABASE_HOST=127.0.0.1 \
+          DATABASE_NAME=erp_alembic_test \
+          DATABASE_USER=erp_app \
+          DATABASE_PASSWORD=erp_ci_pass \
+          alembic check
+
+      - name: Pytest (warnings are errors)
+        run: python -m pytest -W error::DeprecationWarning
+
+      - name: Lint (ruff)
+        run: python -m ruff check app etl frontend tests scripts
+
+      - name: Type check (mypy)
+        run: python -m mypy app  # app only; etl+frontend tracked as TD-013
+
+      - name: Dependency vulnerability scan (audit #11)
+        # Both files: production deps and the CI toolchain itself.
+        run: |
+          python -m pip_audit -r requirements.txt
+          python -m pip_audit -r requirements-dev.txt

@@ -1,0 +1,35 @@
+# Local CI-equivalent gate. Usage (Linux/macOS/Windows PowerShell):
+#   docker compose -f docker/gate/docker-compose.gate.yml up --build \
+#     --abort-on-container-exit --exit-code-from gate
+# or simply: bash scripts/run_gate.sh
+# The database lives on tmpfs: every run starts from an EMPTY PostgreSQL 15.
+# Credentials are the same throwaway values as CI — never production.
+name: erp-gate
+
+services:
+  pg:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      TZ: UTC
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  gate:
+    build:
+      context: ../..
+      dockerfile: docker/gate/Dockerfile
+    depends_on:
+      pg:
+        condition: service_healthy
+    volumes:
+      - ../..:/repo
+    working_dir: /repo
+    command: ["bash", "scripts/gate_in_container.sh"]

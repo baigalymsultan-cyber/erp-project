@@ -1,0 +1,19 @@
+target-version = "py312"
+line-length = 100
+
+[lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = [
+    "RUF001",  # ru comments/strings legitimately use en dash
+    "RUF002",
+    "RUF003",
+    "B008",  # FastAPI Depends() in defaults is the framework idiom
+    "B017",  # pytest.raises(Exception) in DB-integrity tests asserts on the message
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["RUF012"]
+# i18n dictionaries: translation strings are inherently long data, not code.
+"frontend/i18n/*" = ["E501"]
+# Third-party code: extracted skill bundles are reference material, not the ERP.
+"Skills/_extracted/*" = ["E", "F", "I", "B", "UP", "SIM", "RUF"]

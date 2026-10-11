@@ -1,0 +1,2041 @@
+ПОЛНЫЙ АУДИТ MASTER PROMPT v3.0
+ERP / FINANCE / KASPI / MRP / KAZAKHSTAN
+==============================================================================
+
+Основа аудита: файл «Prompt .txt» из Library, 2 927 строк.
+Аудит проведён по всем §0–§135; для каждого раздела указан диапазон строк.
+Критические разделы дополнительно разобраны по бизнес-рискам, конфликтам и исправлениям.
+
+ВАЖНО: это аудит самого MASTER PROMPT v3.0, а не аудит текущего кода проекта.
+Утверждение «IMPLEMENTED» в существующей Requirements Matrix не принимается
+как доказательство корректности требования: здесь проверяется именно формулировка.
+
+СТАТУСЫ:
+P0 = критическая дыра; исправить до production/до соответствующего домена.
+P1 = важное усиление; желательно закрыть до production.
+P2 = улучшение/операционная зрелость.
+OK = требование в основном корректно, но может быть уточнено.
+
+ОФИЦИАЛЬНАЯ ПРОВЕРКА:
+1) Kaspi Guide: актуальные материалы 2026 года по комиссиям, доставке и API.
+2) КГД/официальная база РК: налоговые и ЭСФ-изменения 2026 года.
+3) PostgreSQL official documentation: RLS, constraints, partitioning.
+4) Alembic official documentation: autogenerate требует ручной проверки.
+5) OWASP ASVS 5.0 и OWASP API Security Top 10: authorization/security verification.
+
+КЛЮЧЕВОЙ ВЫВОД:
+MASTER PROMPT v3.0 имеет сильный engineering-control слой, но недостаточно
+строго разделяет operational accounting, double-entry accounting, tax/fiscal
+compliance, external API contracts и immutable financial correction flows.
+Ниже исправления сформулированы так, чтобы не переписывать проект с нуля.
+
+------------------------------------------------------------------------------
+§0 — ГЛАВНАЯ РОЛЬ
+Источник: строки 8–64
+Вердикт: P1
+ПРОБЛЕМА: Роль перегружена: один агент одновременно должен быть архитектором, бухгалтерским/финансовым архитектором, DevOps, QA и т.д.
+РЕШЕНИЕ: Добавить правило компетентностных границ: технические решения можно принимать автономно, а юридические, налоговые и финансово-учётные семантики нельзя выдумывать.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§1 — ОСНОВНОЕ ПРАВИЛО — НИЧЕГО НЕ ПРОПУСКАТЬ
+Источник: строки 65–103
+Вердикт: P0
+ПРОБЛЕМА: Запрет «выдумывать бизнес-правила» есть, но нет обязательной процедуры для юридически/финансово неоднозначных правил.
+РЕШЕНИЕ: Ввести UNVERIFIED/BLOCKED и обязательный официальный источник + effective_from/effective_to для налоговых и внешних тарифных правил.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§2 — ZERO-OMISSION PROTOCOL
+Источник: строки 104–137
+Вердикт: P0
+ПРОБЛЕМА: Requirements Matrix описана, но нет обязательных колонок Evidence, Source Version, Effective Date, Verification Method и Risk.
+РЕШЕНИЕ: Расширить матрицу: Source URL/Document ID, source_version, effective_from, evidence, risk, acceptance criteria, reviewer.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§3 — ЗАПРЕТ НА ПОТЕРЮ ТРЕБОВАНИЙ
+Источник: строки 138–163
+Вердикт: P0
+ПРОБЛЕМА: Трассировка не требует двусторонней проверки: requirement→implementation и implementation→requirement.
+РЕШЕНИЕ: Добавить bidirectional traceability и orphan detection.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§4 — ОБЯЗАТЕЛЬНЫЙ SELF-AUDIT
+Источник: строки 164–192
+Вердикт: P1
+ПРОБЛЕМА: Self-audit проверяет наличие, но не требует доказательства результата и отрицательных тестов.
+РЕШЕНИЕ: Для каждого критерия требовать Evidence: команда/тест/SQL/query/скрин/OpenAPI/лог.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§5 — КОНФЛИКТЫ
+Источник: строки 193–212
+Вердикт: P0
+ПРОБЛЕМА: При конфликте финансовых требований требуется остановка, но нет определения, когда AI обязан считать конфликт финансовым/юридическим.
+РЕШЕНИЕ: Определить protected decisions: tax, ledger, payout, refund, payroll, legal documents, external API contract.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§6 — ИСТОЧНИКИ ТРЕБОВАНИЙ
+Источник: строки 213–259
+Вердикт: P1
+ПРОБЛЕМА: LEVEL B/C не имеют механизма подтверждения, что инженерная практика действительно применима.
+РЕШЕНИЕ: Для добавления технологии/паттерна требовать ADR с пользой, альтернативами, стоимостью и измерением.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§7 — ТЕХНОЛОГИЧЕСКИЙ СТЕК
+Источник: строки 260–330
+Вердикт: P1
+ПРОБЛЕМА: Версии стека указаны частично; «PostgreSQL 15+» может допустить неподтверждённые различия поведения между major versions.
+РЕШЕНИЕ: Зафиксировать supported-version matrix и CI минимум для заявленной production-версии.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§8 — PYTHON-FIRST ARCHITECTURE
+Источник: строки 331–363
+Вердикт: P1
+ПРОБЛЕМА: Python-first правильно, но запрет Node/SPA сформулирован как архитектурное предпочтение, а не проверяемый критерий.
+РЕШЕНИЕ: Оставить Python-first, но разрешать исключение только через ADR и измеримую техническую необходимость.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§9 — GIT — ОБЯЗАТЕЛЕН
+Источник: строки 364–406
+Вердикт: P1
+ПРОБЛЕМА: Git-история задана номерами-коммитами, но нет требований signed commits/provenance/tag/release artifact.
+РЕШЕНИЕ: Добавить release tags, immutable artifacts, provenance/SBOM для production.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§10 — GIT RULES
+Источник: строки 407–427
+Вердикт: P0
+ПРОБЛЕМА: Запрет секретов в Git есть, но нет secret scanning, rotation/revocation и inventory.
+РЕШЕНИЕ: Добавить secret lifecycle: inventory→rotation→revocation→audit→incident response.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§11 — ENVIRONMENT
+Источник: строки 428–455
+Вердикт: P1
+ПРОБЛЕМА: ENVIRONMENT перечисляет секреты, но не разделяет secret/config, не описывает precedence и rotation.
+РЕШЕНИЕ: Добавить typed settings, secret provider, startup validation, rotation без plaintext logging.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§12 — ПРОЕКТНАЯ СТРУКТУРА
+Источник: строки 456–497
+Вердикт: P1
+ПРОБЛЕМА: Структура проекта хорошая, но отсутствуют явные modules для jobs, documents, accounting ledger, tax, inventory, procurement.
+РЕШЕНИЕ: Расширять только по фактическим требованиям, но сделать bounded contexts явными.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§13 — DATABASE
+Источник: строки 498–522
+Вердикт: P0
+ПРОБЛЕМА: Типы данных определены, но нет полного accounting ledger, journal entries/lines и double-entry invariant.
+РЕШЕНИЕ: Добавить полноценный ledger как отдельный bounded context.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§14 — TIMEZONE
+Источник: строки 523–531
+Вердикт: P1
+ПРОБЛЕМА: UTC хранение и Asia/Almaty UI заданы, но не определены business date, cutoff и DST/timezone conversion rules.
+РЕШЕНИЕ: Добавить business calendar, accounting date и timezone conversion policy.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§15 — CURRENCY
+Источник: строки 532–542
+Вердикт: P1
+ПРОБЛЕМА: KZT задан как основная валюта, но нет currency model для возможных валютных операций/документов.
+РЕШЕНИЕ: Либо явно ограничить домен KZT, либо добавить currency/exchange-rate architecture.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§16 — ФИНАНСОВАЯ ЦЕЛОСТНОСТЬ
+Источник: строки 543–559
+Вердикт: P0
+ПРОБЛЕМА: No DELETE недостаточно: нет формальной модели reversal/correction/adjustment и immutable source event.
+РЕШЕНИЕ: Определить correction chain, original_operation_id, reason, approver, accounting period.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§17 — IP ENTITIES
+Источник: строки 560–579
+Вердикт: P0
+ПРОБЛЕМА: BIN проверяется только длиной 12; это синтаксическая, а не юридическая валидация субъекта.
+РЕШЕНИЕ: Разделить format validation и authoritative registry verification; добавить lifecycle и закрытие периода.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§18 — KASPI CREDENTIALS
+Источник: строки 580–609
+Вердикт: P0
+ПРОБЛЕМА: Креды разделены SHOP/PAY, но нет secret versioning/rotation/revocation audit и проверки официального API-контракта.
+РЕШЕНИЕ: Добавить credential versions, key version, last verified, source contract.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§19 — CRYPTOGRAPHY
+Источник: строки 610–632
+Вердикт: P0
+ПРОБЛЕМА: AES-256-GCM сформулирован хорошо, но нет key hierarchy/KMS, AAD, nonce uniqueness, rotation migration и failure handling.
+РЕШЕНИЕ: Определить envelope encryption, AAD, rotation, decrypt compatibility и zeroization/secret handling.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§20 — OPERATION TYPES
+Источник: строки 633–645
+Вердикт: P0
+ПРОБЛЕМА: Operation type задаёт направление, но нет явного mapping к accounting accounts/tax treatment/document source.
+РЕШЕНИЕ: Разделить operation type, business event и accounting posting.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§21 — CATEGORIES
+Источник: строки 646–668
+Вердикт: P1
+ПРОБЛЕМА: Категории доходов/расходов недостаточны для полноценной аналитики и не заменяют chart of accounts.
+РЕШЕНИЕ: Оставить категории как management layer, добавить accounting/tax dimensions отдельно.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§22 — COUNTERPARTIES
+Источник: строки 669–680
+Вердикт: P1
+ПРОБЛЕМА: Counterparties универсальны, но нет ролей supplier/customer/employee/related party и lifecycle.
+РЕШЕНИЕ: Добавить party roles или отдельные domain projections; не ломать историю.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§23 — ORDERS
+Источник: строки 681–712
+Вердикт: P0
+ПРОБЛЕМА: Order содержит commission/delivery как поля, но исторические тарифы, VAT, adjustments, returns и partial fulfilment отсутствуют.
+РЕШЕНИЕ: Разделить order snapshot и расчётные/финансовые документы; хранить тарифную версию.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§24 — KASPI SHOP BUSINESS LOGIC
+Источник: строки 713–732
+Вердикт: P0
+ПРОБЛЕМА: Правильно отделён order от payment, но payout registry не определён как обязательная доменная сущность и нет accounting event boundary.
+РЕШЕНИЕ: Сделать order/payment/payout/bank/accounting отдельными объектами.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§25 — KASPI PAY BUSINESS LOGIC
+Источник: строки 733–747
+Вердикт: P0
+ПРОБЛЕМА: Kaspi Pay операция описана как atomic/idempotent, но нет подтверждённого официального контракта для конкретного API.
+РЕШЕНИЕ: До реализации требовать официальный документ endpoint/auth/request/response/error semantics.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§26 — RAW KASPI DATA
+Источник: строки 748–761
+Вердикт: P0
+ПРОБЛЕМА: Raw payload полезен, но нет request/response metadata, hash, schema version, source endpoint и retention policy.
+РЕШЕНИЕ: Добавить immutable raw envelope + payload_hash + endpoint + headers-safe metadata + schema version.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§27 — OPERATIONS
+Источник: строки 762–789
+Вердикт: P0
+ПРОБЛЕМА: Operations — центральная финансовая сущность, но нет double-entry posting, account, currency, period, document/source и correction chain.
+РЕШЕНИЕ: Не считать operations полноценным бухгалтерским ledger.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§28 — TRANSFERS
+Источник: строки 790–813
+Вердикт: P0
+ПРОБЛЕМА: TRANSFER_OUT+IN хорошо, но нет атомарной пары, account-to-account semantics и защиты от half-transfer.
+РЕШЕНИЕ: Создавать transfer aggregate одной транзакцией с обязательной парой.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§29 — EMPLOYEES
+Источник: строки 814–840
+Вердикт: P1
+ПРОБЛЕМА: Employee слишком плоский для payroll: нет contract, salary history, tax/contribution profile, absences.
+РЕШЕНИЕ: Разделить master employee и исторические employment/payroll records.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§30 — WORK OPERATION TYPES
+Источник: строки 841–911
+Вердикт: P1
+ПРОБЛЕМА: 11 work types заданы как seed, но единицы и ставки не имеют versioned UOM/rate policy.
+РЕШЕНИЕ: Связать operation type с UOM и rate source/effective interval.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§31 — RATES HISTORY
+Источник: строки 912–929
+Вердикт: P0
+ПРОБЛЕМА: Exclusion/overlap идея правильная, но нет timezone/date boundary policy и unique semantics для concurrent rate insertion.
+РЕШЕНИЕ: Использовать безопасное effective-period constraint и транзакционную защиту.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§32 — RATE FREEZE
+Источник: строки 930–943
+Вердикт: P0
+ПРОБЛЕМА: Rate freeze правильный, но нет currency/UOM/source/approval и защиты от backdated changes.
+РЕШЕНИЕ: Замораживать полный pricing context, а не только число rate.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§33 — WORK ENTRIES
+Источник: строки 944–981
+Вердикт: P1
+ПРОБЛЕМА: Generated total_sum полезен, но нет проверки quantity>0, correction semantics и immutable confirmed entries.
+РЕШЕНИЕ: Добавить domain constraints/status transition rules.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§34 — PAYROLL PERIODS
+Источник: строки 982–1002
+Вердикт: P0
+ПРОБЛЕМА: Payroll period имеет только OPEN/PROCESSING/CLOSED/PAID, но нет reopen/locked, approval и period accounting/tax boundaries.
+РЕШЕНИЕ: Добавить close/reopen policy, approval and audit.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§35 — PAYROLL SUMMARY
+Источник: строки 1003–1024
+Вердикт: P0
+ПРОБЛЕМА: Формула payroll_summary записана текстово и не определяет знак deductions, налоги/взносы и rounding.
+РЕШЕНИЕ: Разделить gross, deductions, taxes, employer contributions, net pay и rounding rules.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§36 — PAYROLL PAYMENTS
+Источник: строки 1025–1041
+Вердикт: P0
+ПРОБЛЕМА: Payment method KASPI_TRANSFER/CASH не определяет bank/cash account, payment status, partial payment и reversal.
+РЕШЕНИЕ: Связать payment с account, ledger, status, source document и correction.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§37 — ПРОИЗВОДСТВЕННАЯ СЕБЕСТОИМОСТЬ
+Источник: строки 1042–1059
+Вердикт: P0
+ПРОБЛЕМА: Direct Cost = materials + piecework labor слишком узко для производственной себестоимости.
+РЕШЕНИЕ: Определить costing policy: direct/indirect, overhead allocation, WIP, scrap, yield и valuation method.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§38 — MATERIAL PRICE FREEZE
+Источник: строки 1060–1070
+Вердикт: P0
+ПРОБЛЕМА: price_at_time сохраняет цену, но не источник цены, UOM conversion, VAT, currency и landed cost.
+РЕШЕНИЕ: Freeze полный cost basis.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§39 — EXCEL ETL
+Источник: строки 1071–1089
+Вердикт: P1
+ПРОБЛЕМА: ETL перечисляет типы ошибок, но нет import batch/file/row/error archive/mapping/template version.
+РЕШЕНИЕ: Добавить полноценный import lifecycle.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§40 — DRY RUN
+Источник: строки 1090–1111
+Вердикт: P0
+ПРОБЛЕМА: Dry-run требует отсутствие изменений, но не определяет read-only transaction, isolation и внешние side effects.
+РЕШЕНИЕ: Dry-run должен быть без DB writes и без внешних mutating API calls.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§41 — IDEMPOTENCY
+Источник: строки 1112–1124
+Вердикт: P0
+ПРОБЛЕМА: Idempotency перечисляет UNIQUE/external IDs/fingerprint, но нет единого idempotency store/contract.
+РЕШЕНИЕ: Стандартизировать key/source/request hash/status/result.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§42 — KASPI INTEGRATION
+Источник: строки 1125–1139
+Вердикт: P0
+ПРОБЛЕМА: Официальная документация обязательна — правильно; но нет списка проверяемых контрактов и source version.
+РЕШЕНИЕ: Ввести External API Contract Record.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§43 — RETRIES
+Источник: строки 1140–1153
+Вердикт: P0
+ПРОБЛЕМА: Retry есть, но нет classification: retryable vs non-retryable, Retry-After, circuit breaker и idempotency boundary.
+РЕШЕНИЕ: Добавить policy matrix.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§44 — PAYOUT / RECONCILIATION
+Источник: строки 1154–1180
+Вердикт: P0
+ПРОБЛЕМА: Payout reconciliation перечисляет mismatches, но не определяет payout statement schema, settlement period, commission VAT и adjustments.
+РЕШЕНИЕ: Сделать payout/settlement/reconciliation отдельными моделями.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§45 — SYNC LOG
+Источник: строки 1181–1196
+Вердикт: P1
+ПРОБЛЕМА: sync_log слишком агрегированный для расследования конкретного run/item/error.
+РЕШЕНИЕ: Добавить sync_run, item result, retry/dead-letter and correlation IDs.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§46 — PRODUCTS
+Источник: строки 1197–1213
+Вердикт: P1
+ПРОБЛЕМА: Product catalog не содержит variants, tax attributes, UOM conversions, archival/effective dates.
+РЕШЕНИЕ: Добавить master-data governance.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§47 — ORDER ITEMS
+Источник: строки 1214–1229
+Вердикт: P0
+ПРОБЛЕМА: Order item хранит цену, но нет tax/discount allocation, return linkage и quantity status.
+РЕШЕНИЕ: Разделить commercial snapshot и fulfillment/return data.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§48 — MATERIALS
+Источник: строки 1230–1244
+Вердикт: P1
+ПРОБЛЕМА: Material supplier_id ссылается на неописанную supplier model.
+РЕШЕНИЕ: Явно определить supplier as party role или supplier table.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§49 — ORDER MATERIALS
+Источник: строки 1245–1255
+Вердикт: P0
+ПРОБЛЕМА: Order materials не содержит stock movement/warehouse/location/reservation/consumption status.
+РЕШЕНИЕ: Связать costing с inventory ledger.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§50 — ORDER STATUS HISTORY
+Источник: строки 1256–1270
+Вердикт: P1
+ПРОБЛЕМА: Status history есть, но нет allowed transition matrix, actor role и reason codes.
+РЕШЕНИЕ: Формализовать workflow.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§51 — ACCOUNTS
+Источник: строки 1271–1292
+Вердикт: P0
+ПРОБЛЕМА: Accounts представлены как справочник, но не бухгалтерский chart of accounts + balances/periods/journal lines.
+РЕШЕНИЕ: Развести operational accounts и accounting ledger.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§52 — USERS / ROLES
+Источник: строки 1293–1311
+Вердикт: P0
+ПРОБЛЕМА: Roles есть, но нет user↔IP access scope и granular permissions.
+РЕШЕНИЕ: Добавить RBAC + object/IP scope.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§53 — RBAC
+Источник: строки 1312–1348
+Вердикт: P0
+ПРОБЛЕМА: Backend RBAC есть, но нет object-level/BOLA/IDOR rules и default deny.
+РЕШЕНИЕ: Проверять function + object + IP scope на каждом запросе.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§54 — AUDIT LOG
+Источник: строки 1349–1373
+Вердикт: P0
+ПРОБЛЕМА: Audit log не определяет immutability, hash chain, actor IP/session, before/after redaction и retention.
+РЕШЕНИЕ: Сделать audit append-only и защищённым.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§55 — AUTHENTICATION
+Источник: строки 1374–1388
+Вердикт: P0
+ПРОБЛЕМА: Authentication слишком общая: нет Argon2id policy, session lifecycle, MFA option, lockout, reauthentication.
+РЕШЕНИЕ: Добавить auth/session security baseline.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§56 — UPDATED_AT
+Источник: строки 1389–1395
+Вердикт: P1
+ПРОБЛЕМА: updated_at trigger policy не определяет clock source и immutable fields.
+РЕШЕНИЕ: Использовать DB/server time и запретить изменение immutable timestamps.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§57 — CONCURRENCY
+Источник: строки 1396–1411
+Вердикт: P0
+ПРОБЛЕМА: Concurrency перечисляет locks, но нет transaction isolation/unique race tests/advisory/distributed job locks.
+РЕШЕНИЕ: Добавить concurrency scenarios и evidence.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§58 — FRONTEND
+Источник: строки 1412–1425
+Вердикт: P1
+ПРОБЛЕМА: Streamlit не должен быть security boundary; нет upload/download security.
+РЕШЕНИЕ: Backend authorization remains authoritative.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§59 — DASHBOARD
+Источник: строки 1426–1446
+Вердикт: P1
+ПРОБЛЕМА: Dashboard metrics не определяют accounting source, period semantics и reconciliation status.
+РЕШЕНИЕ: Каждый KPI должен иметь формулу и source of truth.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§60 — UI MODULES
+Источник: строки 1447–1462
+Вердикт: P1
+ПРОБЛЕМА: UI modules упоминают банки, но банковский домен не определён.
+РЕШЕНИЕ: Добавить bank accounts/statements/lines/reconciliation.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§61 — PRODUCTION UI
+Источник: строки 1463–1476
+Вердикт: P1
+ПРОБЛЕМА: Production UI не показывает reservations, stock availability, BOM version и approval state.
+РЕШЕНИЕ: UI должен отражать production domain model.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§62 — REPORTS
+Источник: строки 1477–1496
+Вердикт: P1
+ПРОБЛЕМА: Reports не определяют data source, as-of date, rounding, permissions и export audit.
+РЕШЕНИЕ: Добавить report contracts.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§63 — DATABASE VIEWS
+Источник: строки 1497–1511
+Вердикт: P1
+ПРОБЛЕМА: Три views обязательны, но нет accounting/tax/reconciliation views и materialized-view policy.
+РЕШЕНИЕ: Добавлять только после определения source-of-truth.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§64 — ОБЯЗАТЕЛЬНЫЕ ИНДЕКСЫ
+Источник: строки 1512–1529
+Вердикт: P1
+ПРОБЛЕМА: Индексы названы, но нет доказательства query plans/selectivity и uniqueness for business keys.
+РЕШЕНИЕ: Требовать EXPLAIN evidence и index lifecycle.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§65 — DATABASE MIGRATIONS
+Источник: строки 1530–1542
+Вердикт: P0
+ПРОБЛЕМА: Alembic обязателен, но нет требования вручную ревьюить autogenerate; официальная документация прямо говорит, что autogenerate не идеален.
+РЕШЕНИЕ: Добавить manual migration review + upgrade/downgrade + schema diff.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§66 — TESTING
+Источник: строки 1543–1559
+Вердикт: P1
+ПРОБЛЕМА: Testing categories есть, но нет contract/property/mutation/load/security negative tests.
+РЕШЕНИЕ: Расширить test strategy.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§67 — ОБЯЗАТЕЛЬНЫЕ ФИНАНСОВЫЕ ТЕСТЫ
+Источник: строки 1560–1578
+Вердикт: P0
+ПРОБЛЕМА: Финансовые тесты хороши, но нет double-entry balance, period close, partial refund, commission VAT, bank reconciliation.
+РЕШЕНИЕ: Добавить эти invariants.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§68 — DOCKER
+Источник: строки 1579–1592
+Вердикт: P1
+ПРОБЛЕМА: Docker app+postgres недостаточен для production topology, secrets, healthchecks, non-root, resource limits.
+РЕШЕНИЕ: Production compose/deploy policy отдельно.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§69 — CI/CD
+Источник: строки 1593–1615
+Вердикт: P1
+ПРОБЛЕМА: CI/CD не включает dependency audit, SBOM, secret scan, artifact signing/provenance и rollback gate.
+РЕШЕНИЕ: Расширить pipeline.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§70 — HEALTH CHECK
+Источник: строки 1616–1626
+Вердикт: P1
+ПРОБЛЕМА: Health check не определяет readiness/liveness и dependency failure semantics.
+РЕШЕНИЕ: Разделить liveness/readiness.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§71 — LOGGING
+Источник: строки 1627–1647
+Вердикт: P1
+ПРОБЛЕМА: Logging не определяет log integrity, PII redaction, retention и correlation across jobs.
+РЕШЕНИЕ: Добавить security logging policy.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§72 — MONITORING
+Источник: строки 1648–1660
+Вердикт: P1
+ПРОБЛЕМА: Monitoring нет metrics/traces/SLOs/business metrics.
+РЕШЕНИЕ: Добавить OpenTelemetry-compatible telemetry and alert thresholds.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§73 — BACKUPS
+Источник: строки 1661–1674
+Вердикт: P0
+ПРОБЛЕМА: Backup не определяет RPO/RTO, PITR/WAL, offsite copy, encryption, retention и restore acceptance.
+РЕШЕНИЕ: Добавить formal DR plan.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§74 — PERFORMANCE
+Источник: строки 1675–1689
+Вердикт: P1
+ПРОБЛЕМА: Performance перечисляет оптимизации, но нет budgets/p95/p99 и load test criteria.
+РЕШЕНИЕ: Добавить measurable performance SLOs.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§75 — TAX ARCHITECTURE
+Источник: строки 1690–1702
+Вердикт: P0
+ПРОБЛЕМА: Tax architecture слишком общая: нет tax regimes, rate history, tax documents, ESF/SNT/fiscal layer.
+РЕШЕНИЕ: Добавить versioned Kazakhstan tax/fiscal domain, основанный на официальных источниках.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§76 — FINANCIAL FORMULAS
+Источник: строки 1703–1725
+Вердикт: P0
+ПРОБЛЕМА: Формулы Net Profit и Gross Profit не определяют знак расходов, tax, refunds, overhead, delivery and accounting source.
+РЕШЕНИЕ: Формулы должны иметь versioned definition and source.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§77 — DATA FLOW
+Источник: строки 1726–1752
+Вердикт: P0
+ПРОБЛЕМА: Data flow неполный: нет inventory ledger, bank settlement, accounting ledger, tax docs, returns.
+РЕШЕНИЕ: Расширить canonical business flow.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§78 — ROADMAP
+Источник: строки 1753–1803
+Вердикт: P1
+ПРОБЛЕМА: Roadmap ставит database/ETL/Kaspi раньше полной архитектурной фиксации.
+РЕШЕНИЕ: Добавить Phase 0: discovery, requirements, ADR, domain boundaries, legal/API verification.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§79 — СТРОГОЕ ПРАВИЛО ПО ЭТАПАМ
+Источник: строки 1804–1821
+Вердикт: P0
+ПРОБЛЕМА: Жёсткое правило «не переходить без команды» конфликтует с последующим autonomous planning и пользовательским желанием автономной работы.
+РЕШЕНИЕ: Разделить micro-task autonomy и milestone approval.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§80 — ШАГ 1 — DATABASE
+Источник: строки 1822–1847
+Вердикт: P0
+ПРОБЛЕМА: Step 1 требует полный DDL до архитектурной проработки, а позже §98 требует сначала план.
+РЕШЕНИЕ: Разрешить Phase 0 до Step 1 и запретить код до принятия архитектурного baseline.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§81 — ТОЧНО СОХРАНИТЬ ИСХОДНЫЕ 17 ТАБЛИЦ
+Источник: строки 1848–1865
+Вердикт: P0
+ПРОБЛЕМА: «Сохранить 17 таблиц и не менять поля» конфликтует с объективно необходимой нормализацией/расширением.
+РЕШЕНИЕ: Определить protected compatibility layer: существующие поля сохраняются, но их semantics могут быть дополнены только через ADR.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§82 — ДОПОЛНИТЕЛЬНЫЕ ТАБЛИЦЫ
+Источник: строки 1866–1898
+Вердикт: P0
+ПРОБЛЕМА: Дополнительные таблицы помечаются extension, хотя некоторые из них обязательны для исходных требований: payout, accounts, users.
+РЕШЕНИЕ: Разделить REQUIRED CORE EXTENSION и OPTIONAL ARCHITECTURAL EXTENSION.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§83 — STEP 1 DDL
+Источник: строки 1899–1929
+Вердикт: P0
+ПРОБЛЕМА: DDL требует EXCLUSION constraints в общем списке, хотя они нужны только для конкретных temporal invariants.
+РЕШЕНИЕ: Требовать constraint only when business invariant exists; не добавлять механически.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§84 — DDL ORDER
+Источник: строки 1930–1952
+Вердикт: P1
+ПРОБЛЕМА: Порядок DDL не учитывает role/privilege/RLS/partition policy и safe seed transactions.
+РЕШЕНИЕ: Дополнить DDL ordering.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§85 — SEED DATA
+Источник: строки 1953–1965
+Вердикт: P1
+ПРОБЛЕМА: Seed data не определяет versioning, provenance и safe update strategy.
+РЕШЕНИЕ: Добавить seed version and migration-owned reference data.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§86 — RATE SEEDS
+Источник: строки 1966–1986
+Вердикт: P1
+ПРОБЛЕМА: Стартовые ставки без source/approval/effective_to/ currency/UOM policy.
+РЕШЕНИЕ: Считать их business seed, versioned and auditable.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§87 — SQL IDEMPOTENCY
+Источник: строки 1987–1993
+Вердикт: P0
+ПРОБЛЕМА: Idempotent seed «где возможно» слишком мягко для reference data.
+РЕШЕНИЕ: Определить deterministic natural keys и expected row count.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§88 — ШАГ 1 — ФОРМАТ ОТВЕТА
+Источник: строки 1994–2015
+Вердикт: P1
+ПРОБЛЕМА: Формат Step 1 требует полный SQL в ответе, что может провоцировать огромный output вместо работы в репозитории.
+РЕШЕНИЕ: Если агент имеет repo, писать файл и давать evidence; полный SQL — только когда реально нужен.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§89 — КОД НЕ СОКРАЩАТЬ
+Источник: строки 2016–2039
+Вердикт: P1
+ПРОБЛЕМА: Запрет сокращений полезен для кода, но не для отчётов; он может расходовать action budget.
+РЕШЕНИЕ: Разделить code completeness и report concision.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§90 — ПОСЛЕ SQL
+Источник: строки 2040–2068
+Вердикт: P0
+ПРОБЛЕМА: Self-audit после SQL не проверяет actual database execution, pg_catalog/schema diff и rollback.
+РЕШЕНИЕ: Добавить executable verification.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§91 — ZERO-OMISSION FINAL CHECK
+Источник: строки 2069–2090
+Вердикт: P0
+ПРОБЛЕМА: Zero-omission final check не требует автоматической проверки orphan requirements.
+РЕШЕНИЕ: Сделать script-based traceability check.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§92 — FINAL STEP REPORT
+Источник: строки 2091–2128
+Вердикт: P1
+ПРОБЛЕМА: Final report содержит placeholders «...», что формально конфликтует с §89.
+РЕШЕНИЕ: Разрешить placeholders только как output labels, не как omitted implementation.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§93 — КРИТИЧЕСКОЕ ПРАВИЛО
+Источник: строки 2129–2153
+Вердикт: P0
+ПРОБЛЕМА: Production-ready definition хорошая, но «real API behavior verified» невозможно без credentials/test environment; нужно различать verified/not verified.
+РЕШЕНИЕ: Ввести READY/NOT READY/BLOCKED evidence state.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§94 — API DOCUMENTATION
+Источник: строки 2154–2170
+Вердикт: P0
+ПРОБЛЕМА: API docs policy правильная, но должна требовать сохранение source version/hash/retrieved_at.
+РЕШЕНИЕ: Добавить External Contract Record.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§95 — OPEN QUESTIONS
+Источник: строки 2171–2194
+Вердикт: P0
+ПРОБЛЕМА: Open Questions есть, но не разделены technical/business/legal blockers и нет owner/decision deadline.
+РЕШЕНИЕ: Добавить OQ ID, class, source, blocker impact, owner, due date.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§96 — ГЛАВНЫЙ ПРИНЦИП
+Источник: строки 2195–2222
+Вердикт: P1
+ПРОБЛЕМА: Приоритеты не включают legal compliance / auditability как отдельный класс.
+РЕШЕНИЕ: Добавить Regulatory Compliance перед UI.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§97 — ФИНАЛЬНАЯ КОМАНДА
+Источник: строки 2223–2249
+Вердикт: P0
+ПРОБЛЕМА: Финальная команда «приступай к Step 1» конфликтует с §98 «сначала составь план» и §120 «перед первым кодом показать roadmap».
+РЕШЕНИЕ: Заменить на Phase 0 planning gate.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§98 — AUTONOMOUS PROJECT PLANNING PROTOCOL
+Источник: строки 2250–2269
+Вердикт: P0
+ПРОБЛЕМА: Автономное планирование появилось после Step 1, то есть порядок документа логически инвертирован.
+РЕШЕНИЕ: Перенести planning protocol перед implementation steps.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§99 — ПЛАН НА 7–14 ДНЕЙ
+Источник: строки 2270–2289
+Вердикт: P1
+ПРОБЛЕМА: 7–14 дней не подходит одинаково для маленьких и больших задач; может стимулировать искусственную оценку.
+РЕШЕНИЕ: Сделать horizon adaptive: 7–14 дней как default, не как hard constraint.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§100 — DAILY PLAN
+Источник: строки 2290–2316
+Вердикт: P1
+ПРОБЛЕМА: Daily plan не требует evidence-based acceptance.
+РЕШЕНИЕ: Добавить commands/artifacts/results.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§101 — TASK DECOMPOSITION
+Источник: строки 2317–2348
+Вердикт: P1
+ПРОБЛЕМА: Task decomposition не содержит security/data migration rollback subtasks по умолчанию.
+РЕШЕНИЕ: Добавить mandatory task facets for high-risk changes.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§102 — DEPENDENCY GRAPH
+Источник: строки 2349–2362
+Вердикт: P1
+ПРОБЛЕМА: Dependency graph не определяет external dependencies, blockers и reverse dependencies.
+РЕШЕНИЕ: Добавить machine-readable DAG.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§103 — CRITICAL PATH
+Источник: строки 2363–2377
+Вердикт: P1
+ПРОБЛЕМА: Critical path слишком линейный; многие домены можно делать параллельно после contracts.
+РЕШЕНИЕ: Строить DAG, а не фиксированную цепочку.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§104 — ESTIMATION
+Источник: строки 2378–2396
+Вердикт: P1
+ПРОБЛЕМА: Complexity/risk слишком грубые.
+РЕШЕНИЕ: Добавить impact, reversibility, blast radius.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§105 — BUFFER
+Источник: строки 2397–2410
+Вердикт: P1
+ПРОБЛЕМА: Buffer не определяет процент/критерий.
+РЕШЕНИЕ: Использовать risk-based contingency.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§106 — NO ONE-DAY PROJECT
+Источник: строки 2411–2426
+Вердикт: P1
+ПРОБЛЕМА: No one-day project полезен, но не заменяет scope control.
+РЕШЕНИЕ: Добавить scope freeze/change control.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§107 — DAILY DEVELOPMENT LOOP
+Источник: строки 2427–2447
+Вердикт: P1
+ПРОБЛЕМА: Daily loop отсутствует отдельный security/evidence/quality gate.
+РЕШЕНИЕ: Добавить QUALITY GATE перед COMMIT.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§108 — START-OF-DAY CHECK
+Источник: строки 2448–2460
+Вердикт: P1
+ПРОБЛЕМА: Start-of-day не проверяет environment drift и migration state.
+РЕШЕНИЕ: Добавить schema/app/version drift check.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§109 — END-OF-DAY CHECK
+Источник: строки 2461–2474
+Вердикт: P1
+ПРОБЛЕМА: End-of-day не требует rollback test для risky migrations.
+РЕШЕНИЕ: Добавить risk-based verification.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§110 — DAILY REPORT
+Источник: строки 2475–2508
+Вердикт: P1
+ПРОБЛЕМА: Daily report может быть слишком большим и расходовать агентный budget.
+РЕШЕНИЕ: Короткий evidence report, полный журнал в файле.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§111 — WEEKLY REVIEW
+Источник: строки 2509–2525
+Вердикт: P1
+ПРОБЛЕМА: Weekly review не требует review of legal/API source freshness.
+РЕШЕНИЕ: Добавить source freshness review.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§112 — PLAN ADAPTATION
+Источник: строки 2526–2546
+Вердикт: P1
+ПРОБЛЕМА: Plan adaptation не требует impact on requirements and migrations.
+РЕШЕНИЕ: Добавить traceability update.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§113 — NO FAKE COMPLETION
+Источник: строки 2547–2561
+Вердикт: P0
+ПРОБЛЕМА: No fake completion отсутствует security/legal evidence criterion.
+РЕШЕНИЕ: Добавить source verification and negative tests.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§114 — PROGRESS METRICS
+Источник: строки 2562–2587
+Вердикт: P1
+ПРОБЛЕМА: Progress metrics считают requirements/tasks/tests, но не quality defects и unresolved risk.
+РЕШЕНИЕ: Добавить open P0/P1 defects and evidence coverage.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§115 — PROJECT MILESTONES
+Источник: строки 2588–2608
+Вердикт: P1
+ПРОБЛЕМА: Milestones крупные и не содержат domain acceptance metrics.
+РЕШЕНИЕ: Добавить measurable milestone gates.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§116 — MILESTONE ACCEPTANCE
+Источник: строки 2609–2614
+Вердикт: P1
+ПРОБЛЕМА: Acceptance Criteria не определены шаблоном.
+РЕШЕНИЕ: Каждый milestone должен иметь executable criteria.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§117 — USER APPROVAL
+Источник: строки 2615–2628
+Вердикт: P0
+ПРОБЛЕМА: User approval на каждый milestone противоречит требованию автономной работы; это создаёт искусственные остановки.
+РЕШЕНИЕ: Оставить approval только для protected decisions/financial/legal conflicts.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§118 — LONG-TERM DEVELOPMENT
+Источник: строки 2629–2643
+Вердикт: P1
+ПРОБЛЕМА: Long-term priorities не включают regulatory compliance/operability.
+РЕШЕНИЕ: Добавить compliance and operability.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§119 — ARCHITECTURE BEFORE CODE
+Источник: строки 2644–2659
+Вердикт: P1
+ПРОБЛЕМА: Architecture-before-code не определяет минимальный architecture baseline.
+РЕШЕНИЕ: Добавить required artifacts: context map, ADR, data model, threat model.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§120 — FINAL PROJECT PLAN
+Источник: строки 2660–2690
+Вердикт: P1
+ПРОБЛЕМА: Final project plan слишком общий.
+РЕШЕНИЕ: Добавить scope, deliverables, dependencies, evidence and acceptance.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§121 — PLAN VERSIONING
+Источник: строки 2691–2701
+Вердикт: P1
+ПРОБЛЕМА: Plan versioning есть, но нет хранения diff/author/date/reason.
+РЕШЕНИЕ: Добавить immutable plan history.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§122 — REQUIREMENTS TRACEABILITY
+Источник: строки 2702–2717
+Вердикт: P0
+ПРОБЛЕМА: Traceability только task→REQ; не требует source→REQ→design→code→test→evidence.
+РЕШЕНИЕ: Сделать end-to-end traceability.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§123 — TASK STATUS
+Источник: строки 2718–2731
+Вердикт: P1
+ПРОБЛЕМА: Task statuses отсутствуют CANCELLED/SUPERSEDED/REOPENED.
+РЕШЕНИЕ: Добавить lifecycle states.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§124 — BLOCKERS
+Источник: строки 2732–2746
+Вердикт: P1
+ПРОБЛЕМА: Blocker protocol не различает external/legal/technical/business blockers.
+РЕШЕНИЕ: Добавить blocker class and unblock evidence.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§125 — TECHNICAL DEBT
+Источник: строки 2747–2764
+Вердикт: P1
+ПРОБЛЕМА: Technical debt policy отсутствует severity, owner, due date and acceptance risk.
+РЕШЕНИЕ: Расширить TD schema.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§126 — ARCHITECTURAL DECISION RECORDS
+Источник: строки 2765–2787
+Вердикт: P1
+ПРОБЛЕМА: ADR примеры включают Supabase, хотя он не обязателен; примеры не должны создавать ложные архитектурные требования.
+РЕШЕНИЕ: Оставить только ADR decisions реально применимые к проекту.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§127 — SECURITY PLANNING
+Источник: строки 2788–2802
+Вердикт: P0
+ПРОБЛЕМА: Security planning не содержит threat model, ASVS mapping, secrets lifecycle, supply chain.
+РЕШЕНИЕ: Добавить threat model + security requirements matrix.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§128 — DATABASE PLANNING
+Источник: строки 2803–2817
+Вердикт: P1
+ПРОБЛЕМА: DB planning не включает RLS policy, DB roles/least privilege, PITR/restore.
+РЕШЕНИЕ: Добавить DB security/DR.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§129 — FINANCIAL FEATURE PLANNING
+Источник: строки 2818–2830
+Вердикт: P0
+ПРОБЛЕМА: Financial feature planning не требует double-entry invariant, accounting period, tax treatment and source document.
+РЕШЕНИЕ: Добавить mandatory accounting contract.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§130 — PRODUCTION FEATURE PLANNING
+Источник: строки 2831–2846
+Вердикт: P1
+ПРОБЛЕМА: Production feature planning не включает BOM/version, inventory reservation, scrap/yield/WIP.
+РЕШЕНИЕ: Расширить production contract.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§131 — INTEGRATION FEATURE PLANNING
+Источник: строки 2847–2862
+Вердикт: P0
+ПРОБЛЕМА: Integration planning не требует official contract version, webhook signature, dead-letter, replay protection.
+РЕШЕНИЕ: Добавить integration security/operability contract.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§132 — RELEASE PLAN
+Источник: строки 2863–2885
+Вердикт: P1
+ПРОБЛЕМА: Release plan не включает SBOM/provenance/compatibility/DB expand-contract migration.
+РЕШЕНИЕ: Добавить release security and migration safety.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+------------------------------------------------------------------------------
+§133 — ROLLBACK PLAN
+Источник: строки 2886–2898
+Вердикт: P0
+ПРОБЛЕМА: Rollback database migration нельзя считать универсально безопасным: destructive downgrade может потерять данные.
+РЕШЕНИЕ: Использовать expand-contract и tested restore/forward-fix policy.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§134 — FINAL PROJECT AUDIT
+Источник: строки 2899–2914
+Вердикт: P0
+ПРОБЛЕМА: Final audit перечисляет области, но не задаёт evidence standard, regulatory/API source freshness и DR exercise.
+РЕШЕНИЕ: Сделать evidence-based final gate.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+ДОПОЛНИТЕЛЬНО: этот раздел затрагивает финансовую целостность, безопасность,
+юридическую применимость или внешний контракт; при неоднозначности статус должен быть
+BLOCKED/UNVERIFIED, а не «решено по умолчанию».
+
+------------------------------------------------------------------------------
+§135 — FINAL RULE
+Источник: строки 2915–2927
+Вердикт: P1
+ПРОБЛЕМА: Финальная формулировка хорошая, но не содержит принципа «не выдумывать право/налоги/API».
+РЕШЕНИЕ: Добавить этот принцип в финальные правила.
+ПРОВЕРКА: требование нельзя считать закрытым только наличием текста; нужен measurable evidence.
+ТРЕБУЕМОЕ ДОКАЗАТЕЛЬСТВО: соответствующий тест, SQL/schema diff, API contract, лог,
+или иной артефакт — в зависимости от типа требования.
+TRACEABILITY: § → REQ-ID → design/ADR → implementation → test → evidence.
+QUALITY GATE: P0/P1 дефекты не должны проходить как PASS без documented exception.
+
+==============================================================================
+СВОДКА P0
+==============================================================================
+P0-001: §1 — ОСНОВНОЕ ПРАВИЛО — НИЧЕГО НЕ ПРОПУСКАТЬ
+P0-002: §2 — ZERO-OMISSION PROTOCOL
+P0-003: §3 — ЗАПРЕТ НА ПОТЕРЮ ТРЕБОВАНИЙ
+P0-005: §5 — КОНФЛИКТЫ
+P0-010: §10 — GIT RULES
+P0-013: §13 — DATABASE
+P0-016: §16 — ФИНАНСОВАЯ ЦЕЛОСТНОСТЬ
+P0-017: §17 — IP ENTITIES
+P0-018: §18 — KASPI CREDENTIALS
+P0-019: §19 — CRYPTOGRAPHY
+P0-020: §20 — OPERATION TYPES
+P0-023: §23 — ORDERS
+P0-024: §24 — KASPI SHOP BUSINESS LOGIC
+P0-025: §25 — KASPI PAY BUSINESS LOGIC
+P0-026: §26 — RAW KASPI DATA
+P0-027: §27 — OPERATIONS
+P0-028: §28 — TRANSFERS
+P0-031: §31 — RATES HISTORY
+P0-032: §32 — RATE FREEZE
+P0-034: §34 — PAYROLL PERIODS
+P0-035: §35 — PAYROLL SUMMARY
+P0-036: §36 — PAYROLL PAYMENTS
+P0-037: §37 — ПРОИЗВОДСТВЕННАЯ СЕБЕСТОИМОСТЬ
+P0-038: §38 — MATERIAL PRICE FREEZE
+P0-040: §40 — DRY RUN
+P0-041: §41 — IDEMPOTENCY
+P0-042: §42 — KASPI INTEGRATION
+P0-043: §43 — RETRIES
+P0-044: §44 — PAYOUT / RECONCILIATION
+P0-047: §47 — ORDER ITEMS
+P0-049: §49 — ORDER MATERIALS
+P0-051: §51 — ACCOUNTS
+P0-052: §52 — USERS / ROLES
+P0-053: §53 — RBAC
+P0-054: §54 — AUDIT LOG
+P0-055: §55 — AUTHENTICATION
+P0-057: §57 — CONCURRENCY
+P0-065: §65 — DATABASE MIGRATIONS
+P0-067: §67 — ОБЯЗАТЕЛЬНЫЕ ФИНАНСОВЫЕ ТЕСТЫ
+P0-073: §73 — BACKUPS
+P0-075: §75 — TAX ARCHITECTURE
+P0-076: §76 — FINANCIAL FORMULAS
+P0-077: §77 — DATA FLOW
+P0-079: §79 — СТРОГОЕ ПРАВИЛО ПО ЭТАПАМ
+P0-080: §80 — ШАГ 1 — DATABASE
+P0-081: §81 — ТОЧНО СОХРАНИТЬ ИСХОДНЫЕ 17 ТАБЛИЦ
+P0-082: §82 — ДОПОЛНИТЕЛЬНЫЕ ТАБЛИЦЫ
+P0-083: §83 — STEP 1 DDL
+P0-087: §87 — SQL IDEMPOTENCY
+P0-090: §90 — ПОСЛЕ SQL
+P0-091: §91 — ZERO-OMISSION FINAL CHECK
+P0-093: §93 — КРИТИЧЕСКОЕ ПРАВИЛО
+P0-094: §94 — API DOCUMENTATION
+P0-095: §95 — OPEN QUESTIONS
+P0-097: §97 — ФИНАЛЬНАЯ КОМАНДА
+P0-098: §98 — AUTONOMOUS PROJECT PLANNING PROTOCOL
+P0-113: §113 — NO FAKE COMPLETION
+P0-117: §117 — USER APPROVAL
+P0-122: §122 — REQUIREMENTS TRACEABILITY
+P0-127: §127 — SECURITY PLANNING
+P0-129: §129 — FINANCIAL FEATURE PLANNING
+P0-131: §131 — INTEGRATION FEATURE PLANNING
+P0-133: §133 — ROLLBACK PLAN
+P0-134: §134 — FINAL PROJECT AUDIT
+
+==============================================================================
+СВОДКА P1
+==============================================================================
+P1-000: §0 — ГЛАВНАЯ РОЛЬ
+P1-004: §4 — ОБЯЗАТЕЛЬНЫЙ SELF-AUDIT
+P1-006: §6 — ИСТОЧНИКИ ТРЕБОВАНИЙ
+P1-007: §7 — ТЕХНОЛОГИЧЕСКИЙ СТЕК
+P1-008: §8 — PYTHON-FIRST ARCHITECTURE
+P1-009: §9 — GIT — ОБЯЗАТЕЛЕН
+P1-011: §11 — ENVIRONMENT
+P1-012: §12 — ПРОЕКТНАЯ СТРУКТУРА
+P1-014: §14 — TIMEZONE
+P1-015: §15 — CURRENCY
+P1-021: §21 — CATEGORIES
+P1-022: §22 — COUNTERPARTIES
+P1-029: §29 — EMPLOYEES
+P1-030: §30 — WORK OPERATION TYPES
+P1-033: §33 — WORK ENTRIES
+P1-039: §39 — EXCEL ETL
+P1-045: §45 — SYNC LOG
+P1-046: §46 — PRODUCTS
+P1-048: §48 — MATERIALS
+P1-050: §50 — ORDER STATUS HISTORY
+P1-056: §56 — UPDATED_AT
+P1-058: §58 — FRONTEND
+P1-059: §59 — DASHBOARD
+P1-060: §60 — UI MODULES
+P1-061: §61 — PRODUCTION UI
+P1-062: §62 — REPORTS
+P1-063: §63 — DATABASE VIEWS
+P1-064: §64 — ОБЯЗАТЕЛЬНЫЕ ИНДЕКСЫ
+P1-066: §66 — TESTING
+P1-068: §68 — DOCKER
+P1-069: §69 — CI/CD
+P1-070: §70 — HEALTH CHECK
+P1-071: §71 — LOGGING
+P1-072: §72 — MONITORING
+P1-074: §74 — PERFORMANCE
+P1-078: §78 — ROADMAP
+P1-084: §84 — DDL ORDER
+P1-085: §85 — SEED DATA
+P1-086: §86 — RATE SEEDS
+P1-088: §88 — ШАГ 1 — ФОРМАТ ОТВЕТА
+P1-089: §89 — КОД НЕ СОКРАЩАТЬ
+P1-092: §92 — FINAL STEP REPORT
+P1-096: §96 — ГЛАВНЫЙ ПРИНЦИП
+P1-099: §99 — ПЛАН НА 7–14 ДНЕЙ
+P1-100: §100 — DAILY PLAN
+P1-101: §101 — TASK DECOMPOSITION
+P1-102: §102 — DEPENDENCY GRAPH
+P1-103: §103 — CRITICAL PATH
+P1-104: §104 — ESTIMATION
+P1-105: §105 — BUFFER
+P1-106: §106 — NO ONE-DAY PROJECT
+P1-107: §107 — DAILY DEVELOPMENT LOOP
+P1-108: §108 — START-OF-DAY CHECK
+P1-109: §109 — END-OF-DAY CHECK
+P1-110: §110 — DAILY REPORT
+P1-111: §111 — WEEKLY REVIEW
+P1-112: §112 — PLAN ADAPTATION
+P1-114: §114 — PROGRESS METRICS
+P1-115: §115 — PROJECT MILESTONES
+P1-116: §116 — MILESTONE ACCEPTANCE
+P1-118: §118 — LONG-TERM DEVELOPMENT
+P1-119: §119 — ARCHITECTURE BEFORE CODE
+P1-120: §120 — FINAL PROJECT PLAN
+P1-121: §121 — PLAN VERSIONING
+P1-123: §123 — TASK STATUS
+P1-124: §124 — BLOCKERS
+P1-125: §125 — TECHNICAL DEBT
+P1-126: §126 — ARCHITECTURAL DECISION RECORDS
+P1-128: §128 — DATABASE PLANNING
+P1-130: §130 — PRODUCTION FEATURE PLANNING
+P1-132: §132 — RELEASE PLAN
+P1-135: §135 — FINAL RULE
+
+==============================================================================
+ОБЯЗАТЕЛЬНЫЕ НОВЫЕ БЛОКИ MASTER PROMPT
+==============================================================================
+1. Accounting Ledger: chart_of_accounts, journal_entries, journal_lines, accounting periods, double-entry invariant.
+2. Tax/Fiscal Layer: tax regimes, rate history, tax documents, ESF/SNT/fiscal applicability, source/version/effective dates.
+3. Kaspi Contract Registry: official source, endpoint, auth, request/response schema, error semantics, retrieved_at, source version.
+4. Payout/Settlement Domain: payout statement, payout items, commissions, VAT component, delivery, adjustments, partial payouts.
+5. Returns/Refunds Domain: return, return items, refund, refund items, restock/damage, financial reversal.
+6. Bank Domain: bank accounts, statements, statement lines, imports, matching, reconciliation.
+7. Inventory Ledger: warehouses, stock movements, reservations, consumption, transfers, adjustments, valuation.
+8. MRP/Production: BOM versions, production orders, routing, work centers, WIP, scrap, yield, capacity.
+9. Procurement: suppliers, purchase orders, receipts, supplier invoices, supplier payments, purchase returns.
+10. UOM: units and conversions with effective dates.
+11. Payroll/HR: contracts, salary history, absences, taxes/contributions, approvals, close/reopen.
+12. Authorization: User→Role→IP Scope→Permission→Object authorization.
+13. Jobs: jobs, runs, attempts, locks, dead-letter, replay.
+14. Outbox/Inbox: atomic event publication and webhook idempotency.
+15. Document Management: documents, versions, attachments, hashes, retention.
+16. Approval Workflow: maker-checker and segregation of duties.
+17. DR: RPO/RTO, PITR/WAL, offsite backups, restore exercise.
+18. Supply Chain Security: dependency lock, vulnerability scanning, SBOM, provenance.
+19. Observability: metrics, logs, traces, business SLOs and alerts.
+20. Data Governance: retention, PII classification, archival, legal hold.
+
+==============================================================================
+КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ КОНФЛИКТА АВТОНОМНОСТИ
+==============================================================================
+Было: «не переходить к следующему шагу без команды пользователя».
+Одновременно: «autonomous project planning» и автономная работа.
+Исправить на три режима:
+A) Technical execution — автономно.
+B) Architecture decision — автономно через ADR, если обратимо и не меняет business semantics.
+C) Protected decision — STOP/BLOCKED: налог, право, бухгалтерская семантика,
+   финансовые проводки, возвраты, Kaspi contract, payroll legal treatment.
+Это позволяет агенту не зависать на каждом шаге, но исключает опасные выдуманные правила.
+
+==============================================================================
+КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ KASPI
+==============================================================================
+Kaspi-правила должны быть versioned. Официальные материалы 2026 года показывают,
+что условия меняются: комиссия с 5 января 2026 года учитывает НДС отдельно,
+а тарифы доставки с 1 января 2026 года зависят от суммы заказа, направления и веса.
+Следовательно, тариф нельзя считать вечной константой в Python.
+Нужно хранить source/effective_from/effective_to и применять историческое правило.
+
+==============================================================================
+КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ALEMBIC
+==============================================================================
+Autogenerate нельзя считать источником истины. Официальная документация Alembic
+прямо указывает, что autogenerate не идеален и сгенерированные миграции нужно
+вручную просматривать и корректировать. Поэтому Quality Gate должен требовать
+manual review + upgrade + downgrade/restore strategy + schema diff.
+
+==============================================================================
+КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ RLS / AUTHORIZATION
+==============================================================================
+PostgreSQL RLS предоставляет default-deny поведение при включённой RLS без
+подходящей policy, но владелец таблицы обычно не подчиняется RLS. Поэтому
+нельзя считать одной RLS достаточно: нужны DB roles/least privilege + application
+authorization + object/IP scope + тесты обхода.
+
+==============================================================================
+ФИНАЛЬНЫЙ VERDICT
+==============================================================================
+MASTER PROMPT v3.0: НЕ удалять и не переписывать полностью.
+Архитектурная основа: STRONG.
+Control/traceability: STRONG, но требует evidence и bidirectional traceability.
+Financial accounting: INCOMPLETE.
+Tax/fiscal Kazakhstan layer: INCOMPLETE.
+Kaspi contract/tariff versioning: INCOMPLETE.
+Inventory/MRP depth: INCOMPLETE.
+Security lifecycle: INCOMPLETE.
+DR/observability/supply-chain: PARTIAL.
+Autonomy vs approval: CONFLICT — requires protected-decision model.
+
+Итоговый порядок исправления:
+P0 → Requirements/ADR → Accounting/Tax/Kaspi contracts → DB/domain → API → tests → QG.
+Не добавлять технологии ради списка. Каждое расширение должно быть связано с REQ-ID
+и иметь доказательство необходимости.
+
+ОФИЦИАЛЬНЫЕ ИСТОЧНИКИ ДЛЯ ПРОВЕРКИ ПРИ ИСПРАВЛЕНИИ:
+• Kaspi Гид для партнеров — API Магазина, комиссия, доставка, документы 2026.
+• Комитет государственных доходов РК — ЭСФ/налоговые изменения 2026.
+• ИПС Әділет — действующий Налоговый кодекс РК.
+• PostgreSQL Documentation 18 — RLS, constraints, partitioning.
+• Alembic Documentation 1.19 — autogenerate/manual review.
+• OWASP ASVS 5.0 — verification requirements.
+• OWASP API Security Top 10 2023 — authorization/API risks.
+
+КОНЕЦ АУДИТА
