@@ -100,8 +100,8 @@ jobs:
         run: |
           DATABASE_HOST=127.0.0.1 \
           DATABASE_NAME=erp_alembic_test \
-          DATABASE_USER=erp_app \
-          DATABASE_PASSWORD=erp_ci_pass \
+          DATABASE_USER=erp_migrator \
+          DATABASE_PASSWORD=erp_ci_migrator_pass \
           alembic check
 
       - name: Pytest (warnings are errors)
